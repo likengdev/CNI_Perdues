@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     'apps.utilisateurs',
     'apps.administration',
     'apps.annonces',
+    'apps.mise_en_relation',
 ]
 
 AUTH_USER_MODEL ='administration.Administrateur'
