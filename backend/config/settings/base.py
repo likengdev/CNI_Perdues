@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     'apps.annonces',
     'apps.mise_en_relation',
     'apps.alertes',
+    'apps.gestes',
 ]
 
 AUTH_USER_MODEL ='administration.Administrateur'
