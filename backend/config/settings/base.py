@@ -31,6 +31,7 @@ INSTALLED_APPS = [
 ]
 
 AUTH_USER_MODEL ='administration.Administrateur'
+TESSERACT_CMD = env('TESSERACT_CMD', default='tesseract')
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
