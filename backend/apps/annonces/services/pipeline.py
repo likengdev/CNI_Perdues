@@ -4,26 +4,25 @@ import numpy as np
 from .cni_parser import ServiceParserCNI
 from .doctr_engine import ServiceOCRDocTR
 from .photo_extractor import ServicePhotoExtractor
-from .preprocessing import ServicePretraitement
 from .validator import ServiceValidation
 
 
 class PipelineExtractionCNI:
     """
-    Chef d'orchestre : enchaîne prétraitement -> OCR -> parsing -> validation
-    -> extraction photo, pour recto et verso. Aucune exception ne remonte :
-    un échec à une étape donne des champs vides (contrainte 10.1).
+    Chef d'orchestre : OCR -> parsing -> validation -> extraction photo,
+    pour recto et verso. Aucune exception ne remonte : un échec à une
+    étape donne des champs vides (contrainte 10.1).
 
-    Important : docTR (via DocumentFile.from_images) n'accepte que des
-    chemins de fichiers ou des bytes encodés (JPEG/PNG) -- jamais un
-    tableau numpy ou une image PIL en mémoire directement. C'est
-    ServiceOCRDocTR.lire_mots() qui gère cet encodage en interne
-    (cv2.imencode), donc ce pipeline lui passe toujours des images
-    numpy classiques (format OpenCV), jamais autre chose.
+    Important : docTR reçoit l'image BRUTE, sans prétraitement OpenCV
+    supplémentaire. docTR embarque son propre prétraitement interne,
+    optimisé pour ses modèles -- un traitement maison ajouté par-dessus
+    (débruitage, contraste, netteté) dégrade la détection des libellés
+    plutôt que de l'améliorer, comme confirmé en comparant avec un test
+    isolé sans prétraitement (résultats corrects) contre le pipeline
+    avec prétraitement (confusion nom/prénom).
     """
 
     def __init__(self):
-        self.pretraitement = ServicePretraitement()
         self.ocr = ServiceOCRDocTR()
         self.parser = ServiceParserCNI()
         self.validation = ServiceValidation()
@@ -38,11 +37,8 @@ class PipelineExtractionCNI:
         image_recto = self._decoder(fichier_recto)
         image_verso = self._decoder(fichier_verso)
 
-        image_recto_corrigee = self.pretraitement.corriger(image_recto)
-        image_verso_corrigee = self.pretraitement.corriger(image_verso)
-
-        mots_recto = self.ocr.lire_mots(image_recto_corrigee)
-        mots_verso = self.ocr.lire_mots(image_verso_corrigee)
+        mots_recto = self.ocr.lire_mots(image_recto)
+        mots_verso = self.ocr.lire_mots(image_verso)
 
         champs_recto = self.parser.parser_recto(mots_recto)
         champs_verso = self.parser.parser_verso(mots_verso)

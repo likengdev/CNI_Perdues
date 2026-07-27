@@ -69,3 +69,22 @@ class AnnonceDetailSerializer(serializers.ModelSerializer):
             'position_precision', 'statut', 'date_creation',
         ]
         read_only_fields = fields
+class RechercheAnnonceSerializer(serializers.ModelSerializer):
+    """
+    Représentation publique d'une annonce dans les résultats de
+    recherche (section 7.C) : uniquement les champs utiles au
+    bénéficiaire, jamais les photos brutes recto/verso (contrainte
+    10.3 -- ces photos ne sont jamais montrées publiquement).
+    """
+
+    class Meta:
+        model = Annonce
+        fields = [
+            'id', 'nom_titulaire', 'prenom_titulaire',
+            'photo_titulaire', 'date_creation',
+        ]
+        read_only_fields = fields
+class RejetAnnonceSerializer(serializers.Serializer):
+    """Rejet d'une annonce par l'administrateur (section 7.G) : le motif est obligatoire."""
+
+    motif_rejet = serializers.CharField(max_length=255)    

@@ -12,15 +12,15 @@ DUREE_EXPIRATION = timedelta(hours=72)
 
 class MiseEnRelation(ModeleHorodate):
     """
-    Représente le processus déclenché quand un bénéficiaire clique sur
-    "Oui, c'est moi" (cahier des charges, section 8.4).
+    Processus déclenché quand un bénéficiaire clique sur "Oui, c'est moi"
+    (cahier des charges, section 8.4).
 
-    Hérite de ModeleHorodate : date_creation correspond à la date de
-    consultation des coordonnées du déclarant.
+    Seul le bénéficiaire confirme la restitution effective : il est le
+    seul en position de savoir s'il a physiquement récupéré sa carte,
+    ce qui garde le parcours simple et rapide (choix de conception,
+    plutôt qu'une double confirmation déclarant + bénéficiaire).
 
-    Une seule mise en relation active à la fois par annonce (OneToOne),
-    conformément à la règle de gestion : "Une annonce ne peut être en
-    cours de restitution qu'avec un seul bénéficiaire à la fois."
+    Une seule mise en relation active à la fois par annonce (OneToOne).
     """
 
     annonce = models.OneToOneField(
@@ -35,7 +35,6 @@ class MiseEnRelation(ModeleHorodate):
     )
 
     notification_whatsapp_envoyee = models.BooleanField(default=False)
-    confirmation_declarant = models.BooleanField(default=False)
     confirmation_beneficiaire = models.BooleanField(default=False)
     cloture_administrateur = models.BooleanField(default=False)
 
@@ -50,22 +49,14 @@ class MiseEnRelation(ModeleHorodate):
         return f"{self.annonce} <-> {self.beneficiaire}"
 
     def save(self, *args, **kwargs):
-        """
-        Encapsulation : la date d'expiration (72h) est calculée
-        automatiquement à la création, sans que la vue qui crée l'objet
-        ait besoin de connaître cette règle métier (section 7.D).
-        """
         if not self.date_expiration:
             self.date_expiration = timezone.now() + DUREE_EXPIRATION
         super().save(*args, **kwargs)
 
     def est_expiree(self):
-        """Vrai si le délai de 72h est dépassé sans confirmation des deux parties."""
-        return (
-            timezone.now() > self.date_expiration
-            and not (self.confirmation_declarant and self.confirmation_beneficiaire)
-        )
+        """Vrai si le délai de 72h est dépassé sans confirmation du bénéficiaire."""
+        return timezone.now() > self.date_expiration and not self.confirmation_beneficiaire
 
     def est_restitution_confirmee(self):
-        """Les deux parties ont confirmé : la restitution peut être close par l'admin."""
-        return self.confirmation_declarant and self.confirmation_beneficiaire
+        """Le bénéficiaire a confirmé : prêt pour clôture par l'admin."""
+        return self.confirmation_beneficiaire

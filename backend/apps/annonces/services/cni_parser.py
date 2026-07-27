@@ -2,32 +2,22 @@ import re
 
 
 class ServiceParserCNI:
-    """
-    Interprète les mots OCR (texte + position + confiance, sortie de
-    ServiceOCRDocTR) selon la structure connue d'une CNI camerounaise
-    (cahier des charges, section 7.B et point 29 : libellés bilingues
-    FR/EN concaténés ou séparés).
-    """
+    """Interprète les mots OCR selon la structure connue d'une CNI camerounaise."""
 
     LABELS = [
         "NOM", "NAME", "SURNAME", "NOMISURNAME",
         "PRENOM", "PRÉNOM", "PRÉNOMSIGIVEN", "GIVEN", "NAMES",
         "BIRTH", "DATE", "NAISSANCE",
         "SEX", "SEXE", "LIEU", "PLACE",
-        "NUMERO", "NUMÉRO", "NIC",
+        "NUMERO", "NUMÉRO", "NIC",             
         "OF", "DE", "DU", "LA",
     ]
-    SEUIL_CONFIANCE_MIN = 0.80
+    SEUIL_CONFIANCE_MIN = 0.80 
 
     def _est_label(self, texte):
         return any(label in texte for label in self.LABELS)
 
     def _chercher_apres(self, mots, index_label):
-        """
-        Cherche, après un libellé donné, le premier mot qui n'est ni un
-        autre libellé, ni une date, ni situé au-dessus du libellé
-        (mauvaise zone), ni en dessous du seuil de confiance minimal.
-        """
         label = mots[index_label]
         for mot in mots[index_label + 1:]:
             if self._est_label(mot["text"]):
@@ -42,7 +32,6 @@ class ServiceParserCNI:
         return None
 
     def parser_recto(self, mots):
-        """Nom, prénoms, date de naissance -- présents sur le recto."""
         resultat = {"nom": "", "prenoms": "", "date_naissance": "", "confidence": {}}
 
         dates = [m for m in mots if re.search(r"\d{2}\.\d{2}\.\d{4}", m["text"])]
@@ -69,12 +58,6 @@ class ServiceParserCNI:
         return resultat
 
     def parser_verso(self, mots):
-        """
-        Lieu de naissance et numéro CNI -- présents sur le verso.
-        Le numéro CNI suit le format 1-2 lettres + 8 chiffres
-        (ex: AA12848533), différent du numéro de document du recto
-        (cahier des charges, point 29).
-        """
         resultat = {"lieu_naissance": "", "numero_cni": "", "confidence": {}}
 
         for index, mot in enumerate(mots):
