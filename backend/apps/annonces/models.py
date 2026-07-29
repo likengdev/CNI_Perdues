@@ -6,7 +6,13 @@ from apps.utilisateurs.models import Utilisateur
 
 
 class Annonce(ModeleHorodate):
-    """CNI retrouvée publiée par un déclarant (cahier des charges, section 8.3)."""
+    """
+    CNI retrouvée publiée par un déclarant (cahier des charges, section 8.3).
+
+    Hérite de ModeleHorodate : date_creation fait office de date de
+    publication, date_modification suit les changements de statut
+    (validation, rejet, restitution...).
+    """
 
     class PositionCNI(models.TextChoices):
         EN_MA_POSSESSION = 'possession', 'En ma possession'
@@ -21,7 +27,11 @@ class Annonce(ModeleHorodate):
         RESTITUEE = 'restituee', 'Restituée'
         REJETEE = 'rejetee', 'Rejetée'
 
-    declarant = models.ForeignKey(Utilisateur, on_delete=models.CASCADE, related_name='annonces_publiees')
+    declarant = models.ForeignKey(
+        Utilisateur,
+        on_delete=models.CASCADE,
+        related_name='annonces_publiees',
+    )
 
     photo_recto = models.ImageField(upload_to='cni/recto/')
     photo_verso = models.ImageField(upload_to='cni/verso/')
@@ -33,10 +43,22 @@ class Annonce(ModeleHorodate):
     numero_carte = models.CharField(max_length=50)
     photo_titulaire = models.ImageField(upload_to='cni/titulaire/')
 
-    position_cni = models.CharField(max_length=20, choices=PositionCNI.choices)
-    position_precision = models.CharField(max_length=255, null=True, blank=True)
+    position_cni = models.CharField(
+        max_length=20,
+        choices=PositionCNI.choices,
+    )
+    position_precision = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        help_text="Obligatoire uniquement si position_cni = 'Autre lieu'.",
+    )
 
-    statut = models.CharField(max_length=20, choices=StatutAnnonce.choices, default=StatutAnnonce.EN_ATTENTE)
+    statut = models.CharField(
+        max_length=20,
+        choices=StatutAnnonce.choices,
+        default=StatutAnnonce.EN_ATTENTE,
+    )
     motif_rejet = models.CharField(max_length=255, null=True, blank=True)
 
     class Meta:
@@ -48,7 +70,9 @@ class Annonce(ModeleHorodate):
 
     def clean(self):
         if self.position_cni == self.PositionCNI.AUTRE and not self.position_precision:
-            raise ValidationError("La précision du lieu est obligatoire lorsque 'Autre lieu' est sélectionné.")
+            raise ValidationError(
+                "La précision du lieu est obligatoire lorsque 'Autre lieu' est sélectionné."
+            )
 
     def est_visible_publiquement(self):
         return self.statut == self.StatutAnnonce.PUBLIEE

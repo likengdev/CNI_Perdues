@@ -9,10 +9,9 @@ class ServiceOCRDocTR:
     une seule fois au niveau de la classe (coûteux à charger, réutilisé
     entre les requêtes).
 
-    IMPORTANT : DocumentFile.from_images() n'accepte PAS un tableau numpy
-    brut -- seulement un chemin de fichier (str) ou des bytes encodés
-    (JPEG/PNG). On encode donc systématiquement l'image en JPEG en
-    mémoire avant de l'envoyer à docTR.
+    IMPORTANT : docTR reçoit l'image BRUTE, sans prétraitement OpenCV
+    supplémentaire -- un prétraitement maison dégrade la détection des
+    libellés plutôt que de l'améliorer (confirmé par comparaison de tests).
     """
 
     _modele = None
@@ -24,13 +23,19 @@ class ServiceOCRDocTR:
         return cls._modele
 
     def lire_mots(self, image_cv2):
+        if image_cv2 is None:
+            return []
+            
         succes, buffer = cv2.imencode('.jpg', image_cv2)
         if not succes:
             return []
 
         image_bytes = buffer.tobytes()
-        document = DocumentFile.from_images([image_bytes])
-        resultat = self._obtenir_modele()(document)
+        try:
+            document = DocumentFile.from_images([image_bytes])
+            resultat = self._obtenir_modele()(document)
+        except Exception:
+            return []
 
         mots = []
         for page in resultat.pages:

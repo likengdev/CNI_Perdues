@@ -1,20 +1,20 @@
 from rest_framework import status
 from rest_framework.decorators import api_view, parser_classes
+from rest_framework.generics import get_object_or_404
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
-from rest_framework.generics import get_object_or_404
+from apps.alertes.models import AlerteRecherche
+from apps.historique.models import Historique
 from apps.mise_en_relation.services import ServiceExpirationMiseEnRelation
-from .serializers import RejetAnnonceSerializer
 
-
-from django.db.models import Q
-from .serializers import RechercheAnnonceSerializer
-
+from .models import Annonce
 from .serializers import (
     AnnonceDetailSerializer,
     ExtractionCNIResultSerializer,
     ExtractionCNISerializer,
     PublicationAnnonceSerializer,
+    RechercheAnnonceSerializer,
+    RejetAnnonceSerializer,
 )
 from .services.pipeline import PipelineExtractionCNI
 
@@ -22,7 +22,11 @@ from .services.pipeline import PipelineExtractionCNI
 @api_view(['POST'])
 @parser_classes([MultiPartParser])
 def extraire_informations_cni(request):
-    """Étape 1 du parcours déclarant : extraction docTR, prévisualisation avant publication."""
+    """
+    Étape 1 du parcours déclarant (section 6.1, étapes 4-6) : extraction
+    docTR, prévisualisation avant publication définitive. Rien n'est
+    encore enregistré en base ici.
+    """
     serializer = ExtractionCNISerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
 
@@ -39,23 +43,29 @@ def extraire_informations_cni(request):
 @api_view(['POST'])
 @parser_classes([MultiPartParser])
 def publier_annonce(request):
-    """Étape finale : position de la CNI renseignée par le déclarant + enregistrement, statut 'en_attente'."""
+    """
+    Étape finale du parcours déclarant (section 6.1, étapes 7-8) :
+    position de la CNI renseignée par le déclarant, enregistrement
+    avec le statut "en_attente", en attente de validation admin.
+    """
     serializer = PublicationAnnonceSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     annonce = serializer.save()
 
-    return Response(AnnonceDetailSerializer(annonce).data, status=status.HTTP_201_CREATED)
-
+    return Response(
+        AnnonceDetailSerializer(annonce).data,
+        status=status.HTTP_201_CREATED,
+    )
 
 
 @api_view(['GET'])
 def rechercher_annonces(request):
     """
-    Recherche d'annonces publiées par nom/prénom (section 7.C).
-    Seules les annonces au statut "publiee" sont visibles -- une
-    annonce en attente ou rejetée ne doit jamais apparaître.
+    Recherche d'annonces publiées par nom/prénom (section 7.C). Seules
+    les annonces au statut "publiee" sont visibles.
     """
     ServiceExpirationMiseEnRelation().nettoyer()
+
     nom = request.query_params.get('nom', '').strip()
     prenom = request.query_params.get('prenom', '').strip()
 
@@ -68,27 +78,3 @@ def rechercher_annonces(request):
 
     serializer = RechercheAnnonceSerializer(resultats, many=True)
     return Response(serializer.data)
-
-@api_view(['POST'])
-def valider_annonce(request, annonce_id):
-    """Validation par l'administrateur (section 7.G) : l'annonce devient visible dans les recherches."""
-    annonce = get_object_or_404(Annonce, id=annonce_id)
-    annonce.statut = Annonce.StatutAnnonce.PUBLIEE
-    annonce.save()
-
-    return Response(AnnonceDetailSerializer(annonce).data)
-
-
-@api_view(['POST'])
-def rejeter_annonce(request, annonce_id):
-    """Rejet par l'administrateur (section 7.G), avec motif obligatoire."""
-    annonce = get_object_or_404(Annonce, id=annonce_id)
-
-    serializer = RejetAnnonceSerializer(data=request.data)
-    serializer.is_valid(raise_exception=True)
-
-    annonce.statut = Annonce.StatutAnnonce.REJETEE
-    annonce.motif_rejet = serializer.validated_data['motif_rejet']
-    annonce.save()
-
-    return Response(AnnonceDetailSerializer(annonce).data)

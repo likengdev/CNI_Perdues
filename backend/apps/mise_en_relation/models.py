@@ -15,10 +15,9 @@ class MiseEnRelation(ModeleHorodate):
     Processus déclenché quand un bénéficiaire clique sur "Oui, c'est moi"
     (cahier des charges, section 8.4).
 
-    Seul le bénéficiaire confirme la restitution effective : il est le
-    seul en position de savoir s'il a physiquement récupéré sa carte,
-    ce qui garde le parcours simple et rapide (choix de conception,
-    plutôt qu'une double confirmation déclarant + bénéficiaire).
+    Seul le bénéficiaire confirme la restitution effective (choix de
+    conception assumé : parcours simple et rapide, pas de double
+    confirmation avec le déclarant).
 
     Une seule mise en relation active à la fois par annonce (OneToOne).
     """

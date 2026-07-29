@@ -6,8 +6,7 @@ import cv2
 class ServicePhotoExtractor:
     """
     Découpe la photo du titulaire sur le recto. Zone standard validée
-    visuellement sur ce modèle de CNI camerounaise (cadrage fixe :
-    photo en haut-gauche/centre, sous le drapeau).
+    visuellement sur ce modèle de CNI camerounaise.
     """
 
     def extraire_base64(self, image_recto_brute):

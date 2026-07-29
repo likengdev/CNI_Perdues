@@ -20,7 +20,6 @@ class Historique(ModeleHorodate):
         REJET = 'rejet', 'Rejet'
         CONSULTATION = 'consultation', 'Consultation'
         RESTITUTION = 'restitution', 'Restitution'
-        GESTE = 'geste', 'Geste financier'
         INSCRIPTION = 'inscription', 'Inscription'
         AUTRE = 'autre', 'Autre'
 
