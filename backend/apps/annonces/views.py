@@ -61,13 +61,16 @@ def publier_annonce(request):
 @api_view(['GET'])
 def rechercher_annonces(request):
     """
-    Recherche d'annonces publiées par nom/prénom (section 7.C). Seules
-    les annonces au statut "publiee" sont visibles.
+    Recherche d'annonces publiées par nom/prénom (section 7.C). Le
+    paramètre optionnel date_naissance permet d'affiner en cas
+    d'homonymie (plusieurs personnes portant le même nom/prénom).
+    Seules les annonces au statut "publiee" sont visibles.
     """
     ServiceExpirationMiseEnRelation().nettoyer()
 
     nom = request.query_params.get('nom', '').strip()
     prenom = request.query_params.get('prenom', '').strip()
+    date_naissance = request.query_params.get('date_naissance', '').strip()
 
     resultats = Annonce.objects.filter(statut=Annonce.StatutAnnonce.PUBLIEE)
 
@@ -75,6 +78,8 @@ def rechercher_annonces(request):
         resultats = resultats.filter(nom_titulaire__icontains=nom)
     if prenom:
         resultats = resultats.filter(prenom_titulaire__icontains=prenom)
+    if date_naissance:
+        resultats = resultats.filter(date_naissance=date_naissance)
 
     serializer = RechercheAnnonceSerializer(resultats, many=True)
     return Response(serializer.data)
