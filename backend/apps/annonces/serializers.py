@@ -1,5 +1,6 @@
 import base64
 import uuid
+from datetime import datetime
 
 from django.core.files.base import ContentFile
 from rest_framework import serializers
@@ -8,6 +9,23 @@ from apps.historique.models import Historique
 from apps.utilisateurs.models import Utilisateur
 
 from .models import Annonce
+
+
+def normaliser_date_naissance(valeur):
+    """Convertit JJ.MM.AAAA ou AAAA-MM-JJ en date Python."""
+    if not valeur:
+        raise serializers.ValidationError("La date de naissance est obligatoire.")
+    if hasattr(valeur, 'year'):
+        return valeur
+    texte = str(valeur).strip()
+    for fmt in ('%Y-%m-%d', '%d.%m.%Y', '%d/%m/%Y'):
+        try:
+            return datetime.strptime(texte, fmt).date()
+        except ValueError:
+            continue
+    raise serializers.ValidationError(
+        "Format de date invalide. Utilisez AAAA-MM-JJ (ex : 1990-08-15)."
+    )
 
 
 class ExtractionCNISerializer(serializers.Serializer):
@@ -45,7 +63,8 @@ class PublicationAnnonceSerializer(serializers.ModelSerializer):
     """
 
     telephone_declarant = serializers.CharField(write_only=True)
-    photo_titulaire_base64 = serializers.CharField(write_only=True)
+    photo_titulaire_base64 = serializers.CharField(write_only=True, allow_blank=False)
+    date_naissance = serializers.CharField()
 
     class Meta:
         model = Annonce
@@ -57,9 +76,24 @@ class PublicationAnnonceSerializer(serializers.ModelSerializer):
         ]
 
     def validate_telephone_declarant(self, value):
-        if not Utilisateur.objects.filter(telephone=value).exists():
+        utilisateur = Utilisateur.objects.filter(telephone=value).first()
+        if not utilisateur:
             raise serializers.ValidationError(
                 "Ce numéro n'est pas inscrit. Veuillez d'abord vous inscrire."
+            )
+        if not utilisateur.peut_publier_annonce():
+            raise serializers.ValidationError(
+                "Complétez votre profil (ville et quartier) avant de publier."
+            )
+        return value
+
+    def validate_date_naissance(self, value):
+        return normaliser_date_naissance(value)
+
+    def validate_photo_titulaire_base64(self, value):
+        if not value or not str(value).strip():
+            raise serializers.ValidationError(
+                "La photo du titulaire est obligatoire. Reprenez l'extraction ou ajoutez-la manuellement."
             )
         return value
 
@@ -71,7 +105,19 @@ class PublicationAnnonceSerializer(serializers.ModelSerializer):
         return donnees
 
     def _decoder_photo_titulaire(self, donnee_base64):
-        contenu_binaire = base64.b64decode(donnee_base64)
+        texte = (donnee_base64 or "").strip()
+        if ',' in texte and texte.startswith('data:'):
+            texte = texte.split(',', 1)[1]
+        try:
+            contenu_binaire = base64.b64decode(texte, validate=False)
+        except Exception as exc:
+            raise serializers.ValidationError({
+                "photo_titulaire_base64": "Photo du titulaire invalide (base64)."
+            }) from exc
+        if not contenu_binaire:
+            raise serializers.ValidationError({
+                "photo_titulaire_base64": "Photo du titulaire vide."
+            })
         nom_fichier = f"{uuid.uuid4()}.jpg"
         return ContentFile(contenu_binaire, name=nom_fichier)
 

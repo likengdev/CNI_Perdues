@@ -1,98 +1,216 @@
-Avant d'écrire ou de modifier une seule ligne de code, analyse entièrement mon projet React.
+Avant de modifier une seule ligne de code, analyse complètement mon projet React/Vite ainsi que mon backend Django REST Framework.
 
-Je veux que tu consultes d'abord toute l'architecture existante afin de comprendre :
+Je veux que tu comprennes d'abord l'architecture complète du projet avant d'intervenir.
 
-- la structure des dossiers,
-- les composants,
-- les pages,
-- les routes,
-- les layouts,
-- les styles,
-- le système de navigation,
-- les composants réutilisables.
+Analyse :
 
-Ne crée pas de nouveaux fichiers ou composants s'il en existe déjà qui peuvent être réutilisés.
+- les composants React ;
+- les pages ;
+- les routes React Router ;
+- les layouts ;
+- les hooks ;
+- les services ;
+- les appels Axios ;
+- les composants réutilisables ;
+- les endpoints Django ;
+- les serializers ;
+- les views ;
+- le workflow complet du module "Postuler une CNI".
 
-Une fois cette analyse terminée, ajoute uniquement la fonctionnalité suivante en respectant le design actuel de l'application.
+IMPORTANT
+
+Tu ne dois PAS modifier toute l'application.
+
+Tu dois travailler UNIQUEMENT sur le module **Postuler une CNI**.
+
+Ne touche pas :
+
+- au module Recherche de CNI ;
+- au module Espace Administrateur ;
+- à la Landing Page ;
+- aux autres routes ;
+- aux autres pages ;
+- aux autres boutons ;
+- aux autres composants.
+
+Toutes les autres parties de l'application doivent rester exactement comme elles sont.
+
+==================================================================
+
+MISSION
+
+Une fois ton analyse terminée, inspecte entièrement le module **Postuler une CNI**.
+
+Je veux que tu vérifies chaque fichier lié à ce module.
+
+Analyse minutieusement :
+
+- tous les composants ;
+- tous les formulaires ;
+- tous les boutons ;
+- toutes les routes ;
+- tous les appels API ;
+- toute la communication avec le backend ;
+- tous les imports ;
+- toute la logique métier.
+
+Identifie tous les problèmes avant de commencer les corrections.
+
+==================================================================
 
 OBJECTIF
 
-Sur la Landing Page, le bouton **COMMENCER** doit devenir le point d'entrée principal de la plateforme.
+Je ne veux pas reconstruire ce module.
 
-Lorsqu'un utilisateur clique sur ce bouton, il ne doit plus rester sur la Landing Page.
+Je veux uniquement le rendre totalement fonctionnel.
 
-Il doit être redirigé vers une nouvelle page moderne intitulée :
+Le workflow doit être fiable, fluide et professionnel.
 
-**Choisissez une action**
+==================================================================
 
-Cette page doit respecter exactement la même identité visuelle que la Landing Page :
+WORKFLOW À VÉRIFIER
 
-- mêmes couleurs
-- mêmes polices
-- mêmes boutons
-- mêmes espacements
-- mêmes ombres
-- mêmes animations
-- même style premium
+Le parcours complet doit fonctionner sans aucune erreur.
 
-Au centre de la page, afficher trois grandes cartes élégantes.
+1. Inscription du déclarant
 
-Chaque carte possède une illustration, une icône, un titre, une description et un bouton.
+↓
 
-Carte 1
+2. Vérification du numéro si le déclarant possède déjà un compte
 
-Titre :
-Rechercher une CNI
+↓
 
-Description :
-Retrouvez votre Carte Nationale d'Identité parmi les annonces validées.
+3. Création du compte
 
-Bouton :
-Commencer la recherche
+↓
 
-Cette carte redirige vers la page de recherche.
+4. Redirection automatique vers la page de publication
 
-------------------------------------------------
+↓
 
-Carte 2
+5. Capture du recto
 
-Titre :
-Publier une CNI retrouvée
+↓
 
-Description :
-Déclarez une Carte Nationale d'Identité retrouvée en utilisant le système OCR afin que son propriétaire puisse la récupérer.
+6. Capture du verso
 
-Bouton :
-Publier une CNI
+↓
 
-Cette carte redirige vers la page de publication.
+7. Extraction OCR
 
-------------------------------------------------
+↓
 
-Carte 3
+8. Vérification des informations
 
-Titre :
-Espace Administrateur
+↓
 
-Description :
-Accéder au tableau de bord permettant de gérer les utilisateurs, les annonces et les restitutions.
+9. Choix de la localisation
 
-Bouton :
-Connexion Administrateur
+↓
 
-Cette carte redirige vers la page de connexion administrateur.
+10. Résumé
 
-------------------------------------------------
+↓
 
-Exigences importantes :
+11. Publication de l'annonce
 
-- Ne casse aucune fonctionnalité existante.
-- Réutilise les composants déjà présents lorsque c'est possible.
-- Respecte l'architecture actuelle du projet.
-- Mets à jour les routes React Router si nécessaire.
-- Fais en sorte que le bouton COMMENCER de la Landing Page redirige correctement vers cette nouvelle page.
-- Le code doit être propre, modulaire et maintenable.
-- Vérifie qu'il n'y ait aucune erreur d'importation ou de compilation.
-- À la fin, exécute une vérification complète du projet et corrige automatiquement toutes les erreurs éventuelles avant de considérer le travail comme terminé.
+Chaque étape doit fonctionner parfaitement avant de passer à la suivante.
 
-Ne me demande pas de confirmer chaque étape. Analyse d'abord le projet, puis implémente cette fonctionnalité de manière professionnelle.
+==================================================================
+
+BOUTONS
+
+Vérifie absolument tous les boutons appartenant au module "Postuler une CNI".
+
+Aucun bouton ne doit être inactif.
+
+Chaque bouton doit déclencher l'action attendue.
+
+Vérifie notamment :
+
+- Créer mon compte et continuer
+- Déjà inscrit ? Confirmer mon numéro
+- Continuer
+- Retour
+- Publier
+- Tous les autres boutons du module
+
+Ne modifie AUCUN bouton appartenant aux autres modules.
+
+==================================================================
+
+COMMUNICATION FRONTEND / BACKEND
+
+Contrôle toute la communication entre React et Django concernant ce module.
+
+Vérifie :
+
+- les requêtes Axios ;
+- les URLs des endpoints ;
+- les serializers ;
+- les views ;
+- les réponses JSON ;
+- la gestion des erreurs ;
+- les validations.
+
+Corrige les problèmes si nécessaire.
+
+==================================================================
+
+DESIGN
+
+Sans modifier la structure générale du module, améliore son interface.
+
+Je veux une interface moderne, élégante et professionnelle.
+
+Améliore uniquement :
+
+- les cartes ;
+- les formulaires ;
+- les champs ;
+- les boutons ;
+- les messages de succès ;
+- les messages d'erreur ;
+- les animations ;
+- les transitions ;
+- les indicateurs de progression ;
+- le responsive.
+
+Conserve l'identité graphique actuelle de l'application.
+
+==================================================================
+
+IMPORTANT
+
+Avant de créer un nouveau composant, vérifie qu'il n'existe pas déjà.
+
+Réutilise les composants existants.
+
+Ne crée pas de composants dupliqués.
+
+Ne génère jamais un import vers un fichier inexistant.
+
+Si un fichier est nécessaire, crée-le avant de l'importer.
+
+Ne modifie pas l'architecture actuelle du projet sans nécessité.
+
+==================================================================
+
+VALIDATION FINALE
+
+Avant de terminer :
+
+- vérifie que React compile sans erreur ;
+- vérifie que Vite ne signale aucune erreur ;
+- vérifie que tous les imports sont valides ;
+- vérifie que toutes les routes du module fonctionnent ;
+- vérifie que tous les boutons du module fonctionnent ;
+- vérifie que chaque étape du workflow s'enchaîne correctement ;
+- vérifie que la communication avec Django fonctionne ;
+- vérifie que toutes les erreurs sont gérées correctement.
+
+Ne considère pas la tâche terminée tant que le module "Postuler une CNI" n'est pas entièrement fonctionnel.
+
+Travaille comme un Lead Full Stack Engineer expérimenté.
+
+Commence par analyser le projet, identifie les problèmes, puis corrige-les progressivement sans toucher aux autres modules de l'application.

@@ -9,7 +9,7 @@ const SearchBar = () => {
 
   const lancerRecherche = (e) => {
     e.preventDefault();
-    navigue(`/verification?intention=chercher&nom=${nom}&prenom=${prenom}`);
+    navigue(`/recherche?nom=${nom}&prenom=${prenom}`);
   };
 
   return (

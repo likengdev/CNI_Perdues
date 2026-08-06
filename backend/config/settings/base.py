@@ -28,12 +28,15 @@ INSTALLED_APPS = [
     'apps.mise_en_relation',
     'apps.alertes',
     'apps.historique',
+    'corsheaders',
 ]
 
 AUTH_USER_MODEL ='administration.Administrateur'
 TESSERACT_CMD = env('TESSERACT_CMD', default='tesseract')
 
 MIDDLEWARE = [
+       
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',

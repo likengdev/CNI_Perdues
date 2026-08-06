@@ -33,13 +33,13 @@ const Hero = () => {
           <AnimateOnScroll animation="fade-up" delay={400}>
             <div className="flex flex-wrap gap-4 mb-8">
               <button
-                onClick={() => navigue('/verification?intention=declarer')}
+                onClick={() => navigue('/publication')}
                 className="btn-primary"
               >
                 Signaler une CNI trouvée
               </button>
               <button
-                onClick={() => navigue('/verification?intention=chercher')}
+                onClick={() => navigue('/recherche')}
                 className="btn-outline"
               >
                 Rechercher ma CNI
