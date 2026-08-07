@@ -11,13 +11,18 @@ export default {
           50: '#f0f9ff',
           100: '#e0f2fe',
           400: '#38bdf8',
-          500: '#0ea5e9', // Bleu ciel confiance
-          600: '#0284c7', // Bleu institutionnel
+          500: '#0ea5e9',
+          600: '#0284c7',
           700: '#0369a1',
           800: '#075985',
-          900: '#0c4a6e', // Bleu nuit sérieux
+          900: '#0c4a6e',
         },
-        success: '#10b981', // Vert pour la validation
+        marine: {
+          900: '#0f172a',
+          800: '#1e293b',
+          600: '#334155',
+        },
+        success: '#10b981',
       },
       boxShadow: {
         'soft': '0 4px 20px rgba(0,0,0,0.05)',
