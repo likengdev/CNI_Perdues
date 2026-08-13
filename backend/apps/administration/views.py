@@ -3,7 +3,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ReadOnlyModelViewSet
-
+from django.db.models import Count
+from django.db.models.functions import TruncMonth
 from apps.alertes.models import AlerteRecherche
 from apps.annonces.models import Annonce
 from apps.historique.models import Historique
@@ -96,21 +97,51 @@ class AnnonceViewSet(ReadOnlyModelViewSet):
     """Consultation des annonces côté administrateur (validation/rejet restent sur les endpoints dédiés de l'app annonces)."""
 
     permission_classes = [EstAdministrateurAuthentifie]
-    queryset = Annonce.objects.all().order_by('-date_creation')
     serializer_class = AnnonceSerializer
+
+    def get_queryset(self):
+        queryset = Annonce.objects.all().order_by('-date_creation')
+        statut = self.request.query_params.get('statut')
+        if statut:
+            queryset = queryset.filter(statut=statut)
+        return queryset
 
 
 class MiseEnRelationViewSet(ReadOnlyModelViewSet):
     """Consultation des mises en relation/restitutions côté administrateur."""
 
     permission_classes = [EstAdministrateurAuthentifie]
-    queryset = MiseEnRelation.objects.all().order_by('-date_creation')
     serializer_class = MiseEnRelationSerializer
 
-
+    def get_queryset(self):
+        queryset = MiseEnRelation.objects.all().order_by('-date_creation')
+        etat = self.request.query_params.get('etat')
+        if etat == 'en_cours':
+            queryset = queryset.filter(cloture_administrateur=False)
+        elif etat == 'terminees':
+            queryset = queryset.filter(cloture_administrateur=True)
+        return queryset
 class HistoriqueViewSet(ReadOnlyModelViewSet):
     """Consultation du journal d'historique."""
 
     permission_classes = [EstAdministrateurAuthentifie]
     queryset = Historique.objects.all().order_by('-date_creation')
     serializer_class = HistoriqueSerializer
+    
+class RestitutionsMensuellesView(APIView):
+    permission_classes = [EstAdministrateurAuthentifie]
+
+    def get(self, request):
+        donnees = (
+            MiseEnRelation.objects
+            .filter(cloture_administrateur=True, date_cloture__isnull=False)
+            .annotate(mois=TruncMonth('date_cloture'))
+            .values('mois')
+            .annotate(nombre=Count('id'))
+            .order_by('mois')
+        )
+        resultat = [
+            {"mois": entree['mois'].strftime('%Y-%m'), "nombre": entree['nombre']}
+            for entree in donnees
+        ]
+        return Response(resultat)

@@ -44,7 +44,7 @@ class PipelineExtractionCNI:
                 "nom_titulaire": self.validation.nettoyer_texte(champs_recto.get("nom", "")),
                 "prenom_titulaire": self.validation.nettoyer_texte(champs_recto.get("prenoms", "")),
                 "date_naissance": self.validation.valider_date(champs_recto.get("date_naissance", "")),
-                "lieu_naissance": self.validation.nettoyer_texte(champs_verso.get("lieu_naissance", "")),
+                "lieu_naissance": self.validation.nettoyer_texte(champs_verso.get("lieu_naissance", "") or champs_recto.get("lieu_naissance", "")),
                 "numero_carte": self.validation.valider_numero_carte(champs_verso.get("numero_cni", "")),
                 "photo_titulaire_base64": photo_base64,
             }

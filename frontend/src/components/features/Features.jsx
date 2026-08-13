@@ -35,14 +35,15 @@ const Features = () => {
   ];
 
   return (
-    <section id="fonctionnalites" className="py-20 bg-slate-50">
-      <div className="max-w-7xl mx-auto px-6">
+    <section id="fonctionnalites" className="py-24 bg-slate-50 relative overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(14,165,233,0.06),transparent_55%)] pointer-events-none"></div>
+      <div className="max-w-7xl mx-auto px-6 relative">
         <div className="text-center mb-16">
           <AnimateOnScroll animation="fade-down">
-            <span className="text-brand-600 font-bold text-sm tracking-widest uppercase">FONCTIONNALITÉS</span>
+            <span className="text-brand-600 font-bold text-xs tracking-[0.2em] uppercase">Fonctionnalités</span>
           </AnimateOnScroll>
           <AnimateOnScroll animation="fade-up" delay={100}>
-            <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-4 mt-3">Une plateforme pensée pour la confiance</h2>
+            <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-4 mt-3 tracking-tight">Une plateforme pensée pour la confiance</h2>
           </AnimateOnScroll>
           <AnimateOnScroll animation="fade-up" delay={200}>
             <p className="text-slate-500 max-w-2xl mx-auto text-lg">
@@ -54,12 +55,15 @@ const Features = () => {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((feature, index) => (
             <AnimateOnScroll key={index} animation="fade-up" delay={index * 100}>
-              <div className="bg-white p-8 rounded-2xl shadow-soft hover:shadow-card hover:-translate-y-1 transition-all duration-300 border border-slate-100 group h-full">
-                <div className="w-12 h-12 bg-brand-50 rounded-xl flex items-center justify-center text-brand-600 mb-5 group-hover:scale-110 transition-transform">
-                  {feature.icon}
+              <div className="relative h-full bg-white p-8 rounded-2xl shadow-soft hover:shadow-card hover:-translate-y-1 transition-all duration-300 border border-slate-100 group overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-brand-50/0 group-hover:bg-brand-50/60 rounded-bl-full transition-all duration-500"></div>
+                <div className="relative">
+                  <div className="w-12 h-12 bg-brand-50 rounded-xl flex items-center justify-center text-brand-600 mb-5 group-hover:bg-gradient-to-br group-hover:from-brand-500 group-hover:to-brand-700 group-hover:text-white group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-brand-500/30 transition-all duration-300">
+                    {feature.icon}
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-800 mb-3">{feature.title}</h3>
+                  <p className="text-slate-500 text-sm leading-relaxed">{feature.description}</p>
                 </div>
-                <h3 className="text-lg font-bold text-slate-800 mb-3">{feature.title}</h3>
-                <p className="text-slate-500 text-sm leading-relaxed">{feature.description}</p>
               </div>
             </AnimateOnScroll>
           ))}

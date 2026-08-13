@@ -105,7 +105,7 @@ const ChoixEspace = () => {
           {/* CARTE 3: Administrateur */}
           <AnimateOnScroll animation="fade-up" delay={300} className="h-full">
             <div 
-              onClick={() => navigate('/admin/login')}
+              onClick={() => navigate('/admin/connexion')}
               className="group cursor-pointer bg-white/60 backdrop-blur-2xl rounded-[2.5rem] p-10 border border-white/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(15,23,42,0.15)] transition-all duration-500 hover:-translate-y-3 flex flex-col h-full relative overflow-hidden"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-slate-100 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10"></div>

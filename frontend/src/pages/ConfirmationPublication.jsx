@@ -1,18 +1,18 @@
 import { useNavigate } from 'react-router-dom'
-import Header from '../components/layout/Header'
-import Footer from '../components/layout/Footer'
+import HeaderPublication from '../components/annonces/HeaderPublication'
+import FooterPublication from '../components/annonces/FooterPublication'
 
 function ConfirmationPublication() {
   const navigue = useNavigate()
   return (
     <div className="min-h-screen bg-[#f4f9ff] flex flex-col font-sans relative overflow-hidden selection:bg-brand-500 selection:text-white">
-      <Header />
+      <HeaderPublication indexActif={4} />
 
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(16,185,129,0.12),_transparent_55%),radial-gradient(ellipse_at_bottom_right,_rgba(14,165,233,0.1),_transparent_50%)] pointer-events-none" />
       <div className="absolute top-16 left-[10%] w-[420px] h-[420px] bg-success/20 blur-[120px] rounded-full pointer-events-none animate-glow-drift mix-blend-multiply" />
       <div className="absolute bottom-[10%] right-[5%] w-[380px] h-[380px] bg-brand-400/20 blur-[110px] rounded-full pointer-events-none animate-glow-drift mix-blend-multiply" style={{ animationDelay: '1.5s' }} />
 
-      <main className="flex-grow max-w-lg w-full mx-auto px-6 pt-36 pb-20 text-center relative z-10">
+      <main className="flex-grow max-w-lg w-full mx-auto px-6 pt-28 pb-14 text-center relative z-10">
         <div className="pub-card p-10 sm:p-12 animate-scale-in">
           <div className="absolute -top-20 -right-16 w-48 h-48 bg-success/20 blur-3xl rounded-full pointer-events-none" />
           <div className="relative z-10">
@@ -35,7 +35,7 @@ function ConfirmationPublication() {
           </div>
         </div>
       </main>
-      <Footer />
+      <FooterPublication />
     </div>
   )
 }

@@ -15,3 +15,8 @@ export function obtenirStatsDashboard(token) {
     headers: { Authorization: `Bearer ${token}` },
   })
 }
+export function obtenirRestitutionsMensuelles(token){
+  return clientApi.get('/admin/dashboard/restitutions-mensuelles/', {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+}

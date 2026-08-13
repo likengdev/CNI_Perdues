@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-
+from .views import RestitutionsMensuellesView
 from .views import (
     AdminMeView,
     DashboardStatsView,
@@ -29,7 +29,7 @@ urlpatterns = [
     
     # Dashboard
     path('dashboard/stats/', DashboardStatsView.as_view(), name='dashboard_stats'),
-    
+    path('dashboard/restitutions-mensuelles/', RestitutionsMensuellesView.as_view(), name='restitutions_mensuelles'),
     # Autres endpoints via le router (CRUD & Actions)
     path('', include(router.urls)),
 ]

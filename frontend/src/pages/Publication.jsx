@@ -1,10 +1,11 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Header from '../components/layout/Header'
-import Footer from '../components/layout/Footer'
+import HeaderPublication from '../components/annonces/HeaderPublication'
+import FooterPublication from '../components/annonces/FooterPublication'
 import { completerProfil, verifierTelephone, inscrireDeclarant } from '../api/utilisateurs'
 import { extraireInformationsCni, publierAnnonce } from '../api/annonces'
 import { extraireMessageErreur } from '../api/client'
+import RecadragePhoto from '../components/communs/RecadragePhoto'
 
 const REGEX_TELEPHONE_CM = /^6\d{8}$/
 const REGEX_DATE_ISO = /^\d{4}-\d{2}-\d{2}$/
@@ -23,6 +24,69 @@ const LIBELLES_POSITION = {
   commissariat: 'Commissariat',
   mairie: 'Mairie',
   autre: 'Autre lieu',
+}
+
+const ICONES_ETAPES = [
+  (
+    <svg key="icone-compte" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  ),
+  (
+    <svg key="icone-photos" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="12" cy="13" r="4" />
+    </svg>
+  ),
+  (
+    <svg key="icone-infos" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="2" y="5" width="20" height="14" rx="2" />
+      <path d="M2 10h20" strokeLinecap="round" />
+    </svg>
+  ),
+  (
+    <svg key="icone-lieu" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="12" cy="10" r="3" />
+    </svg>
+  ),
+  (
+    <svg key="icone-resume" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="8" y="2" width="8" height="4" rx="1" />
+      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M9 12l2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+]
+
+const TAUX_DE_CONFIANCE = [
+  ['Confidentiel', (
+    <svg key="icone-confidentiel" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="3" y="11" width="18" height="11" rx="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )],
+  ['Gratuit', (
+    <svg key="icone-gratuit" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M12 2l2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.5-4.8 2.5.9-5.4L4.2 7.7l5.4-.8z" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )],
+  ['Validation admin', (
+    <svg key="icone-validation" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M9 12l2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )],
+]
+
+function indexEtapeActive(etape) {
+  if (etape === 'inscription' || etape === 'confirmation-telephone' || etape === 'completer-profil') return 0
+  if (etape === 'recto' || etape === 'verso' || etape === 'extraction') return 1
+  if (etape === 'formulaire') return 2
+  if (etape === 'position') return 3
+  if (etape === 'resume') return 4
+  return 0
 }
 
 function validerTelephone(valeur) {
@@ -57,14 +121,7 @@ function fichierVersBase64(fichier) {
 }
 
 function IndicateurProgression({ etape }) {
-  const indexActif = useMemo(() => {
-    if (etape === 'inscription' || etape === 'confirmation-telephone' || etape === 'completer-profil') return 0
-    if (etape === 'recto' || etape === 'verso' || etape === 'extraction') return 1
-    if (etape === 'formulaire') return 2
-    if (etape === 'position') return 3
-    if (etape === 'resume') return 4
-    return 0
-  }, [etape])
+  const indexActif = useMemo(() => indexEtapeActive(etape), [etape])
 
   return (
     <nav aria-label="Progression" className="mb-10">
@@ -88,6 +145,8 @@ function IndicateurProgression({ etape }) {
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                       <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
+                  ) : actif ? (
+                    ICONES_ETAPES[index]
                   ) : (
                     index + 1
                   )}
@@ -133,15 +192,22 @@ function BoutonRetour({ onClick, label = 'Retour' }) {
   )
 }
 
-function EnteteEtape({ badge, titre, sousTitre }) {
+function EnteteEtape({ badge, titre, sousTitre, icone }) {
   return (
     <div className="mb-8">
-      {badge && (
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-50 border border-brand-100 shadow-sm mb-4">
-          <span className="w-2 h-2 rounded-full bg-brand-500 animate-pulse" />
-          <span className="text-xs font-semibold text-brand-700 tracking-wide uppercase">{badge}</span>
-        </div>
-      )}
+      <div className="flex items-center gap-3 mb-4">
+        {icone && (
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-glow">
+            {icone}
+          </span>
+        )}
+        {badge && (
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-50 border border-brand-100 shadow-sm">
+            <span className="w-2 h-2 rounded-full bg-brand-500 animate-pulse" />
+            <span className="text-xs font-semibold text-brand-700 tracking-wide uppercase">{badge}</span>
+          </div>
+        )}
+      </div>
       <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-2">
         {titre}
       </h1>
@@ -208,6 +274,7 @@ function Publication() {
   const [erreur, setErreur] = useState('')
   const [erreurTelephone, setErreurTelephone] = useState('')
   const [chargement, setChargement] = useState(false)
+  const indexActif = indexEtapeActive(etape)
 
   const [telephone, setTelephone] = useState('')
   const [nom, setNom] = useState('')
@@ -219,6 +286,7 @@ function Publication() {
   const [fichierVerso, setFichierVerso] = useState(null)
   const [apercuRecto, setApercuRecto] = useState(null)
   const [apercuVerso, setApercuVerso] = useState(null)
+  const [photoARecadrer, setPhotoARecadrer] = useState(null)
 
   const [champs, setChamps] = useState({
     nom_titulaire: '',
@@ -353,9 +421,18 @@ function Publication() {
         photo_titulaire_base64: data.photo_titulaire_base64 || '',
       })
       setErreursFormulaire({})
+      
+      // Si la photo n'a pas pu être extraite automatiquement, on lance le recadrage manuel avec le recto
+      if (!data.photo_titulaire_base64 && fichierRecto) {
+        setPhotoARecadrer(URL.createObjectURL(fichierRecto))
+      }
+      
       aller('formulaire')
     } catch (err) {
       setErreur(extraireMessageErreur(err, "L'extraction a échoué. Vous pouvez remplir les champs manuellement."))
+      if (fichierRecto) {
+        setPhotoARecadrer(URL.createObjectURL(fichierRecto))
+      }
       setEtape('formulaire')
     } finally {
       setChargement(false)
@@ -372,15 +449,26 @@ function Publication() {
     })
   }
 
-  const ajouterPhotoTitulaire = async (fichier) => {
+  const gererChoixPhotoTitulaire = (fichier) => {
     if (!fichier) return
-    try {
-      const base64 = await fichierVersBase64(fichier)
-      modifierChamp('photo_titulaire_base64', base64)
-      setErreur('')
-    } catch {
-      setErreur("Impossible de lire la photo du titulaire.")
+    const url = URL.createObjectURL(fichier)
+    setPhotoARecadrer(url)
+  }
+
+  const validerRecadrage = (base64) => {
+    modifierChamp('photo_titulaire_base64', base64)
+    if (photoARecadrer) {
+      URL.revokeObjectURL(photoARecadrer)
     }
+    setPhotoARecadrer(null)
+    setErreur('')
+  }
+
+  const annulerRecadrage = () => {
+    if (photoARecadrer) {
+      URL.revokeObjectURL(photoARecadrer)
+    }
+    setPhotoARecadrer(null)
   }
 
   const validerFormulaireInfos = () => {
@@ -463,15 +551,36 @@ function Publication() {
 
   return (
     <div className="min-h-screen bg-[#f4f9ff] flex flex-col font-sans relative overflow-hidden selection:bg-brand-500 selection:text-white">
-      <Header />
+      <HeaderPublication indexActif={indexActif} />
       <FondLumineux />
 
-      <main className="flex-grow max-w-3xl w-full mx-auto px-5 sm:px-6 pt-28 sm:pt-32 pb-20 relative z-10">
-        <div className="text-center mb-8 animate-fade-up">
-          <p className="text-sm font-semibold text-brand-600 tracking-wide uppercase mb-2">Publication sécurisée</p>
-          <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900">
+      <main className="flex-grow max-w-3xl w-full mx-auto px-5 sm:px-6 pt-24 sm:pt-28 pb-12 relative z-10">
+        <div className="text-center mb-10 animate-fade-up">
+          <div className="inline-flex items-center gap-2 rounded-full bg-white/80 backdrop-blur border border-brand-100 px-4 py-1.5 shadow-sm mb-5">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-brand-500 opacity-75 animate-ping" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-600" />
+            </span>
+            <span className="text-xs font-bold text-brand-700 tracking-widest uppercase">Parcours de déclaration</span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
             Déclarez une <span className="text-gradient">CNI trouvée</span>
           </h2>
+          <p className="mt-3 text-sm sm:text-base text-slate-500 max-w-xl mx-auto leading-relaxed">
+            Aidez son propriétaire à retrouver sa carte nationale d'identité en quelques
+            étapes simples, rapides et sécurisées.
+          </p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-2.5">
+            {TAUX_DE_CONFIANCE.map(([libelle, icone]) => (
+              <span
+                key={libelle}
+                className="inline-flex items-center gap-1.5 rounded-full bg-white/80 backdrop-blur border border-slate-200/80 px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm"
+              >
+                <span className="text-brand-500">{icone}</span>
+                {libelle}
+              </span>
+            ))}
+          </div>
         </div>
 
         <IndicateurProgression etape={etape} />
@@ -493,6 +602,7 @@ function Publication() {
                 badge="Accès  au  compte"
                 titre="Créer votre compte"
                 sousTitre="Renseignez vos informations pour commencer la publication."
+                icone={ICONES_ETAPES[0]}
               />
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -536,6 +646,7 @@ function Publication() {
                 badge="Connexion rapide"
                 titre="Confirmer votre numéro"
                 sousTitre="Saisissez le numéro déjà  utilisé pour vous inscrire."
+                icone={ICONES_ETAPES[0]}
               />
 
               <ChampTexte
@@ -565,6 +676,7 @@ function Publication() {
                 badge="Profil incomplet"
                 titre="Compléter votre profil"
                 sousTitre="Ville et quartier sont requis avant de publier une annonce."
+                icone={ICONES_ETAPES[0]}
               />
 
               <ChampTexte label="Ville" required value={ville} onChange={(e) => setVille(e.target.value)} />
@@ -585,6 +697,7 @@ function Publication() {
               badge={etape === 'recto' ? 'Photo 1 / 2' : 'Photo 2 / 2'}
               titre={`Photographiez le ${etape === 'recto' ? 'recto' : 'verso'}`}
               sousTitre="Assurez-vous que la carte est bien lisible et bien éclairée."
+              icone={ICONES_ETAPES[1]}
             />
 
             <div className="mb-7 min-h-[12rem] flex items-center justify-center rounded-3xl bg-gradient-to-br from-slate-50 to-brand-50/40 border border-dashed border-brand-200/70 overflow-hidden relative group">
@@ -668,6 +781,7 @@ function Publication() {
               badge="Vérification"
               titre="Vérifiez les informations"
               sousTitre="Corrigez si nécessaire avant de continuer."
+              icone={ICONES_ETAPES[2]}
             />
 
             <div className="mb-7 flex flex-col sm:flex-row sm:items-end gap-4 p-4 rounded-2xl bg-gradient-to-br from-brand-50/80 to-white border border-brand-100/70">
@@ -688,7 +802,10 @@ function Publication() {
                   type="file"
                   accept="image/*"
                   className="hidden"
-                  onChange={(e) => ajouterPhotoTitulaire(e.target.files?.[0])}
+                  onChange={(e) => {
+                    gererChoixPhotoTitulaire(e.target.files?.[0])
+                    e.target.value = ''
+                  }}
                 />
               </label>
             </div>
@@ -745,6 +862,7 @@ function Publication() {
               badge="Localisation"
               titre="Où se trouve la carte ?"
               sousTitre="Choisissez le lieu actuel de la CNI."
+              icone={ICONES_ETAPES[3]}
             />
             <div className="space-y-3 mb-6">
               {Object.entries(LIBELLES_POSITION).map(([valeur, libelle]) => (
@@ -803,6 +921,7 @@ function Publication() {
               badge="Dernière étape"
               titre="Résumé de l'annonce"
               sousTitre="Vérifiez une dernière fois avant de publier tout en vous rassurant que les informations sont bien celles de la carte nationale d'identité en votre possession."
+              icone={ICONES_ETAPES[4]}
             />
 
             {champs.photo_titulaire_base64 && (
@@ -846,7 +965,14 @@ function Publication() {
           </CarteEtape>
         )}
       </main>
-      <Footer />
+      <FooterPublication />
+      {photoARecadrer && (
+        <RecadragePhoto 
+          src={photoARecadrer}
+          onValider={validerRecadrage}
+          onAnnuler={annulerRecadrage}
+        />
+      )}
     </div>
   )
 }

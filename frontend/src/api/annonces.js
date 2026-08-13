@@ -14,3 +14,11 @@ export function publierAnnonce(champs) {
   })
   return clientApi.post('/annonces/publier/', donnees)
 }
+export function validerAnnonce(id){
+  return clientApi.post(`/annonces/${id}/valider/`)
+}
+
+export function rejeterAnnonce(id, motifRejet){
+  return clientApi.post(`/annonces/${id}/rejeter/`, { motif_rejet: motifRejet})
+
+}

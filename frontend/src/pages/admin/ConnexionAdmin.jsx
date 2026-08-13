@@ -19,7 +19,7 @@ function ConnexionAdmin() {
     setChargement(true)
     try {
       const { data } = await connexionAdmin(email, motDePasse)
-      connecter(data.access, null)
+      connecter(data.access, data.refresh, null)
       navigue('/admin')
     } catch (err) {
       setErreur(extraireMessageErreur(err, 'Email ou mot de passe incorrect.'))
