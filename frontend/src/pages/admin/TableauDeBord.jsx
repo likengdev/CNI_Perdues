@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   Users, UserCheck, UserPlus, FileText,
-  Clock, CheckCircle, RotateCcw, ShieldCheck,
-  Activity, Bell, ChevronRight, CalendarDays
+  CheckCircle, ShieldCheck,
+  Activity, Bell, ChevronRight, CalendarDays, RefreshCw
 } from 'lucide-react'
 import MiseEnPageAdmin from '../../components/layout/MiseEnPageAdmin'
 import CarteStatistique from '../../components/communs/CarteStatistique'
@@ -11,6 +12,20 @@ import GraphiqueRestitutions from '../../components/admin/GraphiqueRestitutions'
 import { obtenirStatsDashboard, obtenirRestitutionsMensuelles } from '../../api/administration'
 import { extraireMessageErreur } from '../../api/client'
 import { useAdmin } from '../../contexte/ContexteAdmin'
+
+const STYLES_STATUT_ANNONCE = {
+  en_attente: { libelle: 'En attente', classes: 'bg-amber-50 text-amber-600 border-amber-200/50' },
+  publiee: { libelle: 'Publiée', classes: 'bg-emerald-50 text-emerald-600 border-emerald-200/50' },
+  en_cours: { libelle: 'En restitution', classes: 'bg-violet-50 text-violet-600 border-violet-200/50' },
+  restituee: { libelle: 'Restituée', classes: 'bg-pink-50 text-pink-600 border-pink-200/50' },
+  rejetee: { libelle: 'Rejetée', classes: 'bg-red-50 text-red-600 border-red-200/50' },
+}
+
+const stylesStatutAnnonce = (statut) =>
+  STYLES_STATUT_ANNONCE[statut] || {
+    libelle: (statut || '—').replace(/_/g, ' '),
+    classes: 'bg-slate-100 text-slate-600 border-slate-200/50',
+  }
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -24,28 +39,39 @@ const itemVariants = {
 
 function TableauDeBord() {
   const { token, admin } = useAdmin()
+  const navigue = useNavigate()
   const [stats, setStats] = useState(null)
   const [restitutionsMensuelles, setRestitutionsMensuelles] = useState([])
   const [erreur, setErreur] = useState('')
   const [chargement, setChargement] = useState(true)
+  const [rafraichissement, setRafraichissement] = useState(false)
+
+  const charger = async () => {
+    try {
+      const [reponseStats, reponseGraphique] = await Promise.all([
+        obtenirStatsDashboard(token),
+        obtenirRestitutionsMensuelles(token),
+      ])
+      setStats(reponseStats.data)
+      setRestitutionsMensuelles(reponseGraphique.data)
+    } catch (err) {
+      setErreur(extraireMessageErreur(err, 'Impossible de charger les statistiques.'))
+    } finally {
+      setChargement(false)
+      setRafraichissement(false)
+    }
+  }
 
   useEffect(() => {
-    const charger = async () => {
-      try {
-        const [reponseStats, reponseGraphique] = await Promise.all([
-          obtenirStatsDashboard(token),
-          obtenirRestitutionsMensuelles(token),
-        ])
-        setStats(reponseStats.data)
-        setRestitutionsMensuelles(reponseGraphique.data)
-      } catch (err) {
-        setErreur(extraireMessageErreur(err, 'Impossible de charger les statistiques.'))
-      } finally {
-        setChargement(false)
-      }
-    }
     charger()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
+
+  const rafraichir = () => {
+    setErreur('')
+    setRafraichissement(true)
+    charger()
+  }
 
   if (chargement) {
     return (
@@ -84,22 +110,30 @@ function TableauDeBord() {
             </h1>
             <p className="text-slate-500 mt-1">Voici le résumé de l'activité sur la plateforme.</p>
           </div>
-          <div className="px-4 py-2 bg-white rounded-xl border border-slate-200/80 shadow-sm flex items-center gap-2 text-sm text-slate-600">
-            <CalendarDays size={16} className="text-brand-500" />
-            <span className="font-medium capitalize">
-              {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-            </span>
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="px-4 py-2 bg-white rounded-xl border border-slate-200/80 shadow-sm flex items-center gap-2 text-sm text-slate-600">
+              <CalendarDays size={16} className="text-brand-500" />
+              <span className="font-medium capitalize">
+                {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+              </span>
+            </div>
+            <button
+              onClick={rafraichir}
+              disabled={rafraichissement}
+              className="px-3 py-2 bg-white rounded-xl border border-slate-200/80 shadow-sm flex items-center gap-2 text-sm font-semibold text-brand-600 hover:bg-brand-50 hover:border-brand-200 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw size={16} className={rafraichissement ? 'animate-spin' : ''} />
+              Rafraîchir
+            </button>
           </div>
         </div>
 
-        <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+        <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
           <CarteStatistique libelle="Utilisateurs inscrits" valeur={stats.nombre_total_utilisateurs} couleur="#6366f1" icon={Users} />
           <CarteStatistique libelle="Déclarants" valeur={stats.nombre_declarants} couleur="#0ea5e9" icon={UserPlus} />
           <CarteStatistique libelle="Bénéficiaires" valeur={stats.nombre_beneficiaires} couleur="#14b8a6" icon={UserCheck} />
           <CarteStatistique libelle="Annonces au total" valeur={stats.annonces_total} couleur="#64748b" icon={FileText} />
-          <CarteStatistique libelle="En attente de validation" valeur={stats.annonces_en_attente} couleur="#f59e0b" icon={Clock} />
           <CarteStatistique libelle="Annonces publiées" valeur={stats.annonces_publiees} couleur="#10b981" icon={CheckCircle} />
-          <CarteStatistique libelle="Restitutions en cours" valeur={stats.restitutions_en_cours} couleur="#8b5cf6" icon={RotateCcw} />
           <CarteStatistique libelle="CNI restituées" valeur={stats.cni_restituees} couleur="#ec4899" icon={ShieldCheck} />
         </motion.div>
 
@@ -112,7 +146,10 @@ function TableauDeBord() {
                 </div>
                 <h2 className="font-semibold text-slate-800">Dernières annonces</h2>
               </div>
-              <button className="text-sm text-brand-600 hover:text-brand-700 font-medium flex items-center group transition-colors">
+              <button
+                onClick={() => navigue('/admin/annonces/publiees')}
+                className="text-sm text-brand-600 hover:text-brand-700 font-medium flex items-center group transition-colors"
+              >
                 Voir tout <ChevronRight size={16} className="ml-1 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
@@ -138,12 +175,8 @@ function TableauDeBord() {
                         <p className="text-xs text-slate-500 mt-0.5">ID: #{a.id.toString().padStart(4, '0')}</p>
                       </div>
                     </div>
-                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
-                      a.statut === 'EN_ATTENTE' ? 'bg-amber-50 text-amber-600 border border-amber-200/50' :
-                      a.statut === 'PUBLIEE' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200/50' :
-                      'bg-slate-100 text-slate-600 border border-slate-200/50'
-                    }`}>
-                      {a.statut.replace('_', ' ')}
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium border whitespace-nowrap ${stylesStatutAnnonce(a.statut).classes}`}>
+                      {stylesStatutAnnonce(a.statut).libelle}
                     </span>
                   </motion.div>
                 ))

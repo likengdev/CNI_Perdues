@@ -107,6 +107,17 @@ function normaliserDateNaissance(valeur) {
   return texte
 }
 
+function formaterDateCNI(valeur) {
+  const texte = (valeur || '').trim()
+  if (!texte) return ''
+  if (REGEX_DATE_CNI.test(texte)) return texte
+  const iso = texte.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (iso) return `${iso[3]}.${iso[2]}.${iso[1]}`
+  const slash = texte.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
+  if (slash) return `${slash[1]}.${slash[2]}.${slash[3]}`
+  return texte
+}
+
 function fichierVersBase64(fichier) {
   return new Promise((resolve, reject) => {
     const lecteur = new FileReader()
@@ -242,7 +253,7 @@ function ChampTexte({ label, value, onChange, type = 'text', placeholder, requir
 
 function CarteEtape({ children, className = '' }) {
   return (
-    <div className={`pub-card p-8 sm:p-10 animate-scale-in ${className}`}>
+    <div className={`pub-card p-8 sm:p-10 ${className}`}>
       <div className="absolute -top-24 -right-24 w-56 h-56 bg-brand-400/15 blur-3xl rounded-full pointer-events-none" />
       <div className="absolute -bottom-20 -left-16 w-48 h-48 bg-success/10 blur-3xl rounded-full pointer-events-none" />
       <div className="relative z-10">{children}</div>
@@ -415,7 +426,7 @@ function Publication() {
       setChamps({
         nom_titulaire: data.nom_titulaire || '',
         prenom_titulaire: data.prenom_titulaire || '',
-        date_naissance: normaliserDateNaissance(data.date_naissance || ''),
+        date_naissance: formaterDateCNI(normaliserDateNaissance(data.date_naissance || '')),
         lieu_naissance: data.lieu_naissance || '',
         numero_carte: data.numero_carte || '',
         photo_titulaire_base64: data.photo_titulaire_base64 || '',
@@ -478,7 +489,7 @@ function Publication() {
     if (!champs.nom_titulaire.trim()) erreurs.nom_titulaire = 'Le nom est obligatoire.'
     if (!champs.prenom_titulaire.trim()) erreurs.prenom_titulaire = 'Le prénom est obligatoire.'
     if (!date || !REGEX_DATE_ISO.test(date)) {
-      erreurs.date_naissance = 'Date invalide. Format attendu : AAAA-MM-JJ.'
+      erreurs.date_naissance = 'Date invalide. Format attendu : JJ.MM.AAAA.'
     }
     if (!champs.lieu_naissance.trim()) erreurs.lieu_naissance = 'Le lieu de naissance est obligatoire.'
     if (!champs.numero_carte.trim()) erreurs.numero_carte = 'Le numéro de carte est obligatoire.'
@@ -486,8 +497,9 @@ function Publication() {
       erreurs.photo_titulaire_base64 = 'Ajoutez la photo du titulaire pour continuer.'
     }
 
-    if (date && REGEX_DATE_ISO.test(date) && date !== champs.date_naissance) {
-      setChamps((precedent) => ({ ...precedent, date_naissance: date }))
+    const dateCNI = formaterDateCNI(date)
+    if (date && REGEX_DATE_ISO.test(date) && dateCNI !== champs.date_naissance) {
+      setChamps((precedent) => ({ ...precedent, date_naissance: dateCNI }))
     }
 
     setErreursFormulaire(erreurs)
@@ -706,7 +718,7 @@ function Publication() {
                 <img
                   src={etape === 'recto' ? apercuRecto : apercuVerso}
                   alt={`Aperçu ${etape}`}
-                  className="relative z-10 mx-auto rounded-2xl max-h-72 object-contain shadow-glow-lg animate-scale-in"
+                  className="relative z-10 mx-auto rounded-2xl max-h-72 object-contain shadow-glow-lg"
                 />
               ) : (
                 <div className="relative z-10 px-6 py-10">
@@ -829,8 +841,8 @@ function Publication() {
                 />
               </div>
               <ChampTexte
-                label="Date de naissance (AAAA-MM-JJ)"
-                placeholder="1990-08-15"
+                label="Date de naissance (JJ.MM.AAAA)"
+                placeholder="25.04.2005"
                 value={champs.date_naissance}
                 erreur={erreursFormulaire.date_naissance}
                 onChange={(e) => modifierChamp('date_naissance', e.target.value)}
@@ -938,7 +950,7 @@ function Publication() {
               {[
                 ['Nom', champs.nom_titulaire],
                 ['Prénom', champs.prenom_titulaire],
-                ['Date de naissance', champs.date_naissance],
+                ['Date de naissance', formaterDateCNI(champs.date_naissance)],
                 ['Lieu de naissance', champs.lieu_naissance],
                 ['Numéro de carte', champs.numero_carte],
                 [

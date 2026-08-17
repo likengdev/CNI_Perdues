@@ -1,24 +1,66 @@
+import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { CheckCircle, AlertCircle, FileText, BadgeCheck } from 'lucide-react'
+import { CheckCircle, AlertCircle, FileText, BadgeCheck, RotateCcw, ShieldCheck, ImageOff } from 'lucide-react'
 import MiseEnPageAdmin from '../../components/layout/MiseEnPageAdmin'
 import Tableau from '../../components/admin/Tableau'
 import Pagination from '../../components/admin/Pagination'
 import { useListeAdmin } from '../../hooks/useListeAdmin'
 
+const LIBELLES_STATUT = {
+  publiee: { libelle: 'Publiée', Icon: BadgeCheck, classes: 'bg-emerald-50 text-emerald-600 border-emerald-200/50' },
+  en_cours: { libelle: 'En restitution', Icon: RotateCcw, classes: 'bg-violet-50 text-violet-600 border-violet-200/50' },
+  restituee: { libelle: 'Restituée', Icon: ShieldCheck, classes: 'bg-pink-50 text-pink-600 border-pink-200/50' },
+}
+
+function BadgeStatut({ statut }) {
+  const config = LIBELLES_STATUT[statut] || { libelle: statut || '—', Icon: CheckCircle, classes: 'bg-slate-50 text-slate-600 border-slate-200/50' }
+  const Icon = config.Icon
+  return (
+    <div className={`inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border whitespace-nowrap ${config.classes}`}>
+      <Icon size={14} />
+      <span>{config.libelle}</span>
+    </div>
+  )
+}
+
+function PhotoIndividu({ url }) {
+  const [manquante, setManquante] = useState(!url)
+
+  if (!url || manquante) {
+    return (
+      <div className="h-14 w-12 rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 flex items-center justify-center" title="Photo de l'individu indisponible">
+        <ImageOff size={16} className="text-slate-300" />
+      </div>
+    )
+  }
+
+  return (
+    <img
+      src={url}
+      alt="Photo de l'individu"
+      loading="lazy"
+      onError={() => setManquante(true)}
+      className="h-14 w-12 rounded-lg object-cover border border-slate-200 bg-slate-100"
+    />
+  )
+}
+
 function AnnoncesPubliees() {
-  const { donnees, chargement, erreur, suivant, precedent, allerSuivant, allerPrecedent } = useListeAdmin('/admin/annonces/?statut=publiee')
+  const { donnees, chargement, erreur, suivant, precedent, allerSuivant, allerPrecedent } = useListeAdmin('/admin/annonces/?statut=publiee,en_cours,restituee')
 
   return (
     <MiseEnPageAdmin titre="Annonces publiées">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Annonces publiées</h1>
-            <p className="text-slate-500 mt-1">Consultez l'historique des annonces validées et visibles par le public.</p>
+            <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Historique des annonces publiées</h1>
+            <p className="text-slate-500 mt-1">
+              Registre complet : les annonces restent tracées ici même après leur restitution.
+            </p>
           </div>
           <div className="px-4 py-2 bg-emerald-50 text-emerald-700 font-semibold text-sm rounded-xl border border-emerald-200/50 flex items-center space-x-2">
             <CheckCircle size={16} />
-            <span>{donnees?.length || 0} résultats</span>
+            <span>{donnees?.length || 0} annonce{donnees?.length > 1 ? 's' : ''}</span>
           </div>
         </div>
 
@@ -40,10 +82,13 @@ function AnnoncesPubliees() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              <Tableau colonnes={['Titulaire de la CNI', 'Déclarant', 'Position signalée', 'Date de publication', 'Statut']}>
+              <Tableau colonnes={['Photo', 'Titulaire de la CNI', 'Déclarant', 'Position signalée', 'Date de publication', 'Statut']}>
                 {donnees.map((a) => (
                   <tr key={a.id} className="hover:bg-slate-50/50 transition-colors group cursor-default">
                     <td className="px-6 py-4 pl-8">
+                      <PhotoIndividu url={a.photo_titulaire} />
+                    </td>
+                    <td className="px-6 py-4">
                       <div className="flex items-center space-x-3">
                         <div className="w-9 h-9 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-xs">
                           {a.prenom_titulaire.charAt(0)}{a.nom_titulaire.charAt(0)}
@@ -64,15 +109,12 @@ function AnnoncesPubliees() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-sm text-slate-500 bg-slate-100/50 px-2.5 py-1 rounded-md border border-slate-200/50">
+                      <span className="text-sm text-slate-500 bg-slate-100/50 px-2.5 py-1 rounded-md border border-slate-200/50 whitespace-nowrap">
                         {new Date(a.date_creation).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="inline-flex items-center space-x-1.5 bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-full text-xs font-semibold border border-emerald-200/50">
-                        <BadgeCheck size={14} />
-                        <span>Publiée</span>
-                      </div>
+                      <BadgeStatut statut={a.statut} />
                     </td>
                   </tr>
                 ))}
@@ -82,7 +124,7 @@ function AnnoncesPubliees() {
             {donnees.length === 0 && (
               <div className="py-16 text-center text-slate-400 bg-white rounded-2xl border border-dashed border-slate-200 shadow-sm mt-4">
                 <CheckCircle size={48} className="mx-auto text-slate-300 mb-4 opacity-50" />
-                <p className="text-lg font-medium text-slate-600">Aucune annonce publiée.</p>
+                <p className="text-lg font-medium text-slate-600">Aucune annonce publiée pour le moment.</p>
               </div>
             )}
             

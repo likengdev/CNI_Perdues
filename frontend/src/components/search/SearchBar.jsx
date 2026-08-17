@@ -31,7 +31,7 @@ const SearchBar = () => {
                   type="text"
                   value={prenom}
                   onChange={(e) => setPrenom(e.target.value)}
-                  placeholder="ex : Marcel"
+                  placeholder="ex : Naomi"
                   className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-100/60 transition-all"
                 />
               </div>
@@ -49,7 +49,7 @@ const SearchBar = () => {
                   type="text"
                   value={nom}
                   onChange={(e) => setNom(e.target.value)}
-                  placeholder="ex : Kamdem"
+                  placeholder="ex : Bernard"
                   className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-100/60 transition-all"
                 />
               </div>
@@ -62,7 +62,7 @@ const SearchBar = () => {
                 <circle cx="11" cy="11" r="8"/>
                 <path d="M21 21L16.65 16.65" strokeLinecap="round"/>
               </svg>
-              Rechercher
+              Lancer la recherche 
             </button>
           </form>
         </div>

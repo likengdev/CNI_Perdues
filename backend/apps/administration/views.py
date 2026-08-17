@@ -1,9 +1,10 @@
 from django.utils import timezone
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ReadOnlyModelViewSet
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.db.models.functions import TruncMonth
 from apps.alertes.models import AlerteRecherche
 from apps.annonces.models import Annonce
@@ -41,7 +42,13 @@ class DashboardStatsView(APIView):
 
     def get(self, request):
         annonces_total = Annonce.objects.count()
-        annonces_publiees = Annonce.objects.filter(statut=Annonce.StatutAnnonce.PUBLIEE).count()
+        annonces_publiees = Annonce.objects.filter(
+            statut__in=[
+                Annonce.StatutAnnonce.PUBLIEE,
+                Annonce.StatutAnnonce.EN_COURS_RESTITUTION,
+                Annonce.StatutAnnonce.RESTITUEE,
+            ]
+        ).count()
         cni_restituees = Annonce.objects.filter(statut=Annonce.StatutAnnonce.RESTITUEE).count()
 
         donnees = {
@@ -103,7 +110,8 @@ class AnnonceViewSet(ReadOnlyModelViewSet):
         queryset = Annonce.objects.all().order_by('-date_creation')
         statut = self.request.query_params.get('statut')
         if statut:
-            queryset = queryset.filter(statut=statut)
+            statuts = [s.strip() for s in statut.split(',') if s.strip()]
+            queryset = queryset.filter(statut__in=statuts)
         return queryset
 
 
@@ -127,6 +135,49 @@ class HistoriqueViewSet(ReadOnlyModelViewSet):
     permission_classes = [EstAdministrateurAuthentifie]
     queryset = Historique.objects.all().order_by('-date_creation')
     serializer_class = HistoriqueSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        type_action = self.request.query_params.get('type_action')
+        recherche = self.request.query_params.get('recherche', '').strip()
+        depuis = self.request.query_params.get('depuis')
+        jusqua = self.request.query_params.get('jusqua')
+
+        if type_action:
+            actions = [a.strip() for a in type_action.split(',') if a.strip()]
+            if actions:
+                queryset = queryset.filter(type_action__in=actions)
+
+        if recherche:
+            queryset = queryset.filter(
+                Q(description__icontains=recherche)
+                | Q(utilisateur__nom__icontains=recherche)
+                | Q(utilisateur__prenom__icontains=recherche)
+            )
+
+        if depuis:
+            queryset = queryset.filter(date_creation__date__gte=depuis)
+        if jusqua:
+            queryset = queryset.filter(date_creation__date__lte=jusqua)
+
+        return queryset
+
+    @action(detail=False, methods=['get'])
+    def stats(self, request):
+        """Statistiques des actions enregistrées dans le journal d'activité."""
+        total = Historique.objects.count()
+        par_type = dict(
+            Historique.objects.values_list('type_action')
+            .annotate(nombre=Count('id'))
+        )
+        repartition = {
+            choix.value: par_type.get(choix.value, 0)
+            for choix in Historique.TypeAction
+        }
+        return Response({
+            'total': total,
+            'par_type': repartition,
+        })
     
 class RestitutionsMensuellesView(APIView):
     permission_classes = [EstAdministrateurAuthentifie]

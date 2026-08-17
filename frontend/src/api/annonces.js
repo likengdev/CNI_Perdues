@@ -22,3 +22,14 @@ export function rejeterAnnonce(id, motifRejet){
   return clientApi.post(`/annonces/${id}/rejeter/`, { motif_rejet: motifRejet})
 
 }
+
+export function rechercherAnnonces(nom, prenom, dateNaissance, numeroCarte) {
+  return clientApi.get('/annonces/rechercher/', {
+    params: {
+      nom: nom || undefined,
+      prenom: prenom || undefined,
+      date_naissance: dateNaissance || undefined,
+      numero_carte: numeroCarte || undefined,
+    },
+  })
+}

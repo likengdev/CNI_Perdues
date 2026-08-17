@@ -4,6 +4,10 @@ import Accueil from './pages/Accueil'
 import ChoixEspace from './pages/ChoixEspace'
 import Publication from './pages/Publication'
 import ConfirmationPublication from './pages/ConfirmationPublication'
+import Recherche from './pages/Recherche'
+import ResultatsRecherche from './pages/ResultatsRecherche'
+import DetailAnnonce from './pages/DetailAnnonce'
+import PageBeneficiaire from './pages/PageBeneficiaire'
 import ConnexionAdmin from './pages/admin/ConnexionAdmin'
 import TableauDeBord from './pages/admin/TableauDeBord'
 import ListeUtilisateurs from './pages/admin/ListeUtilisateurs'
@@ -25,6 +29,10 @@ function App() {
           <Route path="/choix-espace" element={<ChoixEspace />} />
           <Route path="/publication" element={<Publication />} />
           <Route path="/publication/confirmation" element={<ConfirmationPublication />} />
+          <Route path="/recherche" element={<Recherche />} />
+          <Route path="/recherche/resultats" element={<ResultatsRecherche />} />
+          <Route path="/annonce/:id" element={<DetailAnnonce />} />
+          <Route path="/beneficiaire/:miseEnRelationId" element={<PageBeneficiaire />} />
           <Route path="/admin/connexion" element={<ConnexionAdmin />} />
 
           <Route path="/admin" element={<RouteProtegeeAdmin><TableauDeBord /></RouteProtegeeAdmin>} />

@@ -3,6 +3,8 @@ from rest_framework.decorators import api_view, parser_classes
 from rest_framework.generics import get_object_or_404
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
+from rest_framework.views import APIView
+from apps.administration.permissions import EstAdministrateurAuthentifie
 from apps.alertes.models import AlerteRecherche
 from apps.historique.models import Historique
 from apps.mise_en_relation.services import ServiceExpirationMiseEnRelation
@@ -71,6 +73,7 @@ def rechercher_annonces(request):
     nom = request.query_params.get('nom', '').strip()
     prenom = request.query_params.get('prenom', '').strip()
     date_naissance = request.query_params.get('date_naissance', '').strip()
+    numero_carte = request.query_params.get('numero_carte', '').strip()
 
     resultats = Annonce.objects.filter(statut=Annonce.StatutAnnonce.PUBLIEE)
 
@@ -80,6 +83,79 @@ def rechercher_annonces(request):
         resultats = resultats.filter(prenom_titulaire__icontains=prenom)
     if date_naissance:
         resultats = resultats.filter(date_naissance=date_naissance)
+    if numero_carte:
+        resultats = resultats.filter(numero_carte__icontains=numero_carte)
 
     serializer = RechercheAnnonceSerializer(resultats, many=True)
     return Response(serializer.data)
+
+
+class ValiderAnnonceView(APIView):
+    """
+    Validation d'une annonce en attente par l'administrateur (section 7.G).
+    L'annonce passe au statut 'publiee' et devient visible dans la
+    recherche publique. L'action est journalisée dans l'historique.
+    """
+
+    permission_classes = [EstAdministrateurAuthentifie]
+
+    def post(self, request, pk):
+        annonce = get_object_or_404(Annonce, pk=pk)
+
+        if annonce.statut != Annonce.StatutAnnonce.EN_ATTENTE:
+            return Response(
+                {"detail": "Cette annonce n'est pas en attente de validation."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        annonce.statut = Annonce.StatutAnnonce.PUBLIEE
+        annonce.save(update_fields=['statut', 'date_modification'])
+
+        Historique.enregistrer(
+            utilisateur=annonce.declarant,
+            type_action=Historique.TypeAction.VALIDATION,
+            description=f"Annonce #{annonce.id} validée et publiée par l'administrateur",
+        )
+
+        return Response(
+            AnnonceDetailSerializer(annonce).data,
+            status=status.HTTP_200_OK,
+        )
+
+
+class RejeterAnnonceView(APIView):
+    """
+    Rejet d'une annonce en attente par l'administrateur (section 7.G).
+    Le motif de rejet est obligatoire (RejetAnnonceSerializer) et
+    conservé sur l'annonce. L'action est journalisée dans l'historique.
+    """
+
+    permission_classes = [EstAdministrateurAuthentifie]
+
+    def post(self, request, pk):
+        annonce = get_object_or_404(Annonce, pk=pk)
+
+        if annonce.statut != Annonce.StatutAnnonce.EN_ATTENTE:
+            return Response(
+                {"detail": "Cette annonce n'est pas en attente de validation."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = RejetAnnonceSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        motif = serializer.validated_data['motif_rejet'].strip()
+
+        annonce.statut = Annonce.StatutAnnonce.REJETEE
+        annonce.motif_rejet = motif
+        annonce.save(update_fields=['statut', 'motif_rejet', 'date_modification'])
+
+        Historique.enregistrer(
+            utilisateur=annonce.declarant,
+            type_action=Historique.TypeAction.REJET,
+            description=f"Annonce #{annonce.id} rejetée par l'administrateur (motif : {motif})",
+        )
+
+        return Response(
+            AnnonceDetailSerializer(annonce).data,
+            status=status.HTTP_200_OK,
+        )

@@ -11,7 +11,7 @@ function ListeUtilisateurs() {
   return (
     <MiseEnPageAdmin titre="Utilisateurs">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Utilisateurs inscrits</h1>
             <p className="text-slate-500 mt-1">Gérez tous les comptes utilisateurs de la plateforme.</p>

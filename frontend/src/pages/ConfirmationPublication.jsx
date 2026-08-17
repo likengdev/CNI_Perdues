@@ -13,7 +13,7 @@ function ConfirmationPublication() {
       <div className="absolute bottom-[10%] right-[5%] w-[380px] h-[380px] bg-brand-400/20 blur-[110px] rounded-full pointer-events-none animate-glow-drift mix-blend-multiply" style={{ animationDelay: '1.5s' }} />
 
       <main className="flex-grow max-w-lg w-full mx-auto px-6 pt-28 pb-14 text-center relative z-10">
-        <div className="pub-card p-10 sm:p-12 animate-scale-in">
+        <div className="pub-card p-10 sm:p-12">
           <div className="absolute -top-20 -right-16 w-48 h-48 bg-success/20 blur-3xl rounded-full pointer-events-none" />
           <div className="relative z-10">
             <div className="relative mx-auto mb-7 h-20 w-20">

@@ -42,7 +42,7 @@ function ConnexionAdmin() {
         </div>
 
         {/* Carte de connexion */}
-        <div className="w-full mx-auto p-10 flex flex-col justify-center">
+        <div className="w-full mx-auto p-8 sm:p-10 flex flex-col justify-center">
           <div className="flex items-center gap-3 mb-8">
             <div className="w-11 h-11 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center shrink-0">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -53,7 +53,7 @@ function ConnexionAdmin() {
             <span className="text-lg font-bold text-slate-900">CNIFinder</span>
           </div>
 
-          <h1 className="text-3xl font-extrabold text-slate-900 mb-1">Bienvenue sur L'Espace Admin</h1>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-1">Bienvenue sur L'Espace Admin</h1>
           <p className="text-slate-500 text-sm mb-8">Connectez-vous en toute Sécurité.</p>
 
           <form onSubmit={soumettre} className="space-y-5">

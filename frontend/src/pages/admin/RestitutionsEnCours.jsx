@@ -25,7 +25,7 @@ function RestitutionsEnCours() {
   return (
     <MiseEnPageAdmin titre="Restitutions en cours">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Restitutions en cours</h1>
             <p className="text-slate-500 mt-1">Gérez les mises en relation actives entre déclarants et bénéficiaires.</p>
