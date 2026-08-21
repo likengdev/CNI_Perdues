@@ -133,11 +133,20 @@ class HistoriqueViewSet(ReadOnlyModelViewSet):
     """Consultation du journal d'historique."""
 
     permission_classes = [EstAdministrateurAuthentifie]
-    queryset = Historique.objects.all().order_by('-date_creation')
     serializer_class = HistoriqueSerializer
 
+    TYPES_VISIBLES = [
+        Historique.TypeAction.PUBLICATION,
+        Historique.TypeAction.VALIDATION,
+        Historique.TypeAction.REJET,
+        Historique.TypeAction.RESTITUTION,
+        Historique.TypeAction.INSCRIPTION,
+    ]
+
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = Historique.objects.filter(
+            type_action__in=self.TYPES_VISIBLES
+        ).order_by('-date_creation')
         type_action = self.request.query_params.get('type_action')
         recherche = self.request.query_params.get('recherche', '').strip()
         depuis = self.request.query_params.get('depuis')
@@ -165,14 +174,23 @@ class HistoriqueViewSet(ReadOnlyModelViewSet):
     @action(detail=False, methods=['get'])
     def stats(self, request):
         """Statistiques des actions enregistrées dans le journal d'activité."""
-        total = Historique.objects.count()
+        TYPES_VISIBLES = [
+            Historique.TypeAction.PUBLICATION,
+            Historique.TypeAction.VALIDATION,
+            Historique.TypeAction.REJET,
+            Historique.TypeAction.RESTITUTION,
+            Historique.TypeAction.INSCRIPTION,
+        ]
+        total = Historique.objects.filter(type_action__in=TYPES_VISIBLES).count()
         par_type = dict(
-            Historique.objects.values_list('type_action')
+            Historique.objects.filter(type_action__in=TYPES_VISIBLES)
+            .values_list('type_action')
             .annotate(nombre=Count('id'))
         )
         repartition = {
             choix.value: par_type.get(choix.value, 0)
             for choix in Historique.TypeAction
+            if choix in TYPES_VISIBLES
         }
         return Response({
             'total': total,

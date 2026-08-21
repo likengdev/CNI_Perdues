@@ -92,14 +92,10 @@ class ServiceParserCNI:
             if mot["confidence"] < self.SEUIL_CONFIANCE_MIN:
                 continue
             
-            # En utilisant les coordonnées, y grandit vers le bas et x vers la droite
             dy = mot["y"] - label["y"]
             dx = mot["x"] - label["x"]
             
-            # La valeur doit être approximativement sur la même ligne ou en dessous
-            # On autorise un léger décalage vers le haut (-0.05) et on cherche plus loin en bas (0.4)
             if dy > -0.05 and dy < 0.4 and abs(dx) < 0.5:
-                # Distance spatiale (euclidienne au carré pour comparer)
                 distance = (dx ** 2) + (dy ** 2)
                 candidats.append((distance, mot))
                 
@@ -123,18 +119,42 @@ class ServiceParserCNI:
             if "SURNAME" in mot["text"] or mot["text"] == "NOM":
                 valeur = self._chercher_apres(mots, index, deja_utilises)
                 if valeur:
-                    resultat["nom"] = valeur["text"]
-                    resultat["confidence"]["nom"] = valeur["confidence"]
                     deja_utilises.add(self._identifiant(valeur))
+                    mots_nom = [valeur]
+                    for autre in mots:
+                        if self._identifiant(autre) in deja_utilises:
+                            continue
+                        if autre["confidence"] < self.SEUIL_CONFIANCE_MIN:
+                            continue
+                        if self._est_label(autre["text"]):
+                            continue
+                        if abs(autre["y"] - valeur["y"]) < 0.04 and autre["x"] > valeur["x"]:
+                            mots_nom.append(autre)
+                            deja_utilises.add(self._identifiant(autre))
+                    mots_nom.sort(key=lambda m: m["x"])
+                    resultat["nom"] = " ".join(m["text"] for m in mots_nom)
+                    resultat["confidence"]["nom"] = valeur["confidence"]
                     break
 
         for index, mot in enumerate(mots):
             if "GIVEN" in mot["text"] or "PRENOM" in mot["text"] or "PRÉNOM" in mot["text"]:
                 valeur = self._chercher_apres(mots, index, deja_utilises)
                 if valeur:
-                    resultat["prenoms"] = valeur["text"]
-                    resultat["confidence"]["prenoms"] = valeur["confidence"]
                     deja_utilises.add(self._identifiant(valeur))
+                    mots_prenom = [valeur]
+                    for autre in mots:
+                        if self._identifiant(autre) in deja_utilises:
+                            continue
+                        if autre["confidence"] < self.SEUIL_CONFIANCE_MIN:
+                            continue
+                        if self._est_label(autre["text"]):
+                            continue
+                        if abs(autre["y"] - valeur["y"]) < 0.04 and autre["x"] > valeur["x"]:
+                            mots_prenom.append(autre)
+                            deja_utilises.add(self._identifiant(autre))
+                    mots_prenom.sort(key=lambda m: m["x"])
+                    resultat["prenoms"] = " ".join(m["text"] for m in mots_prenom)
+                    resultat["confidence"]["prenoms"] = valeur["confidence"]
                     break
 
         valeur_lieu = self._chercher_lieu_naissance(mots, deja_utilises)

@@ -143,7 +143,7 @@ function Recherche() {
     setErreur('')
     setChargement(true)
     try {
-      const { data } = await rechercherAnnonces(nomRecherche.trim(), prenomRecherche.trim())
+      const { data } = await rechercherAnnonces(nomRecherche.trim(), prenomRecherche.trim(), undefined, undefined, telephone)
       navigue('/recherche/resultats', {
         state: {
           resultats: data,
@@ -164,7 +164,7 @@ function Recherche() {
     let annule = false
     const executer = async () => {
       try {
-        const { data } = await rechercherAnnonces(nomInit.trim(), prenomInit.trim())
+        const { data } = await rechercherAnnonces(nomInit.trim(), prenomInit.trim(), undefined, undefined, telephone)
         if (annule) return
         navigue('/recherche/resultats', {
           replace: true,
@@ -276,11 +276,7 @@ function Recherche() {
       <main className="flex-grow pt-28 pb-12 relative z-10">
         <section className="px-5 sm:px-6 mb-10">
           <div className="max-w-4xl mx-auto text-center">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            >
+            <div className="animate-scale-in">
               <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur text-brand-700 px-4 py-2 rounded-full text-sm font-semibold border border-brand-100 shadow-sm mb-6">
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
@@ -288,27 +284,21 @@ function Recherche() {
                 </span>
                 Recherche sécurisée
               </div>
-            </motion.div>
+            </div>
 
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-              className="text-3xl md:text-5xl font-extrabold text-slate-900 leading-[1.15] tracking-tight mb-5"
+            <h1
+              className="animate-fade-up text-3xl md:text-5xl font-extrabold text-slate-900 leading-[1.15] tracking-tight mb-5"
             >
               Retrouvez votre{' '}
               <span className="text-gradient">carte d'identité</span> perdue
-            </motion.h1>
+            </h1>
 
-            <motion.p
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-              className="text-base md:text-lg text-slate-500 max-w-2xl mx-auto leading-relaxed"
+            <p
+              className="animate-fade-up delay-100 text-base md:text-lg text-slate-500 max-w-2xl mx-auto leading-relaxed"
             >
               Recherchez parmi les annonces vérifiées par notre équipe : saisissez votre nom et
               votre prénom, puis comparez la photo de la carte pour organiser sa récupération.
-            </motion.p>
+            </p>
           </div>
         </section>
 
@@ -336,11 +326,7 @@ function Recherche() {
         </AnimatePresence>
 
         {etape === 'inscription' ? (
-            <motion.section
-              key="inscription"
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+            <section
               className="px-5 sm:px-6"
             >
               <div className="max-w-lg mx-auto">
@@ -372,17 +358,16 @@ function Recherche() {
                     </p>
                   </motion.div>
 
-                  <AnimatePresence>
-                    {mode === 'inscription' ? (
-                      <motion.form
-                        key="form-inscription"
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 20 }}
-                        transition={{ duration: 0.3 }}
-                        onSubmit={soumettreInscription}
-                        className="space-y-4"
-                      >
+                   <AnimatePresence>
+                     {mode === 'inscription' ? (
+                       <motion.form
+                         key="form-inscription"
+                         initial={{ opacity: 0, x: -20 }}
+                         animate={{ opacity: 1, x: 0 }}
+                         transition={{ duration: 0.3 }}
+                         onSubmit={soumettreInscription}
+                         className="space-y-4"
+                       >
                         <ChampFormulaire label="Nom" icon={User}>
                           <div className="relative group">
                             <input
@@ -438,15 +423,14 @@ function Recherche() {
                         </motion.button>
                       </motion.form>
                     ) : (
-                      <motion.form
-                        key="form-confirmation"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        transition={{ duration: 0.3 }}
-                        onSubmit={confirmerNumero}
-                        className="space-y-4"
-                      >
+                       <motion.form
+                         key="form-confirmation"
+                         initial={{ opacity: 0, x: 20 }}
+                         animate={{ opacity: 1, x: 0 }}
+                         transition={{ duration: 0.3 }}
+                         onSubmit={confirmerNumero}
+                         className="space-y-4"
+                       >
                         <ChampFormulaire label="Téléphone" icon={Phone} erreur={erreurTelephone}>
                           <input
                             type="tel"
@@ -489,7 +473,6 @@ function Recherche() {
                           key="lien-connexion"
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
                           type="button"
                           onClick={() => { setMode('confirmation'); setErreur(''); setErreurTelephone(''); setTelephone('') }}
                           disabled={chargement}
@@ -503,7 +486,6 @@ function Recherche() {
                           key="lien-inscription"
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
                           type="button"
                           onClick={() => { setMode('inscription'); setErreur(''); setErreurTelephone(''); setTelephone('') }}
                           disabled={chargement}
@@ -517,15 +499,9 @@ function Recherche() {
                   </div>
                 </div>
               </div>
-            </motion.section>
-          ) : (
-            <motion.section
-              key="recherche"
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-              className="px-5 sm:px-6"
-            >
+            </section>
+        ) : (
+            <section className="px-5 sm:px-6">
               <div className="max-w-4xl mx-auto">
                 <div className="relative bg-white/90 backdrop-blur-xl p-7 md:p-9 rounded-[2rem] shadow-[0_20px_60px_rgba(2,132,199,0.08),0_2px_8px_rgba(15,23,42,0.04)] border border-white/80 overflow-hidden">
                   <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-brand-600 via-brand-400 to-emerald-400" />
@@ -602,8 +578,8 @@ function Recherche() {
                   </form>
                 </div>
               </div>
-            </motion.section>
-          )}
+            </section>
+        )}
       </main>
 
       <footer className="relative z-10 mt-auto px-5 sm:px-6 pb-6">

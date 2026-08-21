@@ -118,19 +118,6 @@ function formaterDateCNI(valeur) {
   return texte
 }
 
-function fichierVersBase64(fichier) {
-  return new Promise((resolve, reject) => {
-    const lecteur = new FileReader()
-    lecteur.onload = () => {
-      const resultat = String(lecteur.result || '')
-      const base64 = resultat.includes(',') ? resultat.split(',')[1] : resultat
-      resolve(base64)
-    }
-    lecteur.onerror = () => reject(new Error('Lecture du fichier impossible.'))
-    lecteur.readAsDataURL(fichier)
-  })
-}
-
 function IndicateurProgression({ etape }) {
   const indexActif = useMemo(() => indexEtapeActive(etape), [etape])
 
@@ -460,15 +447,9 @@ function Publication() {
     })
   }
 
-  const gererChoixPhotoTitulaire = (fichier) => {
-    if (!fichier) return
-    const url = URL.createObjectURL(fichier)
-    setPhotoARecadrer(url)
-  }
-
   const validerRecadrage = (base64) => {
     modifierChamp('photo_titulaire_base64', base64)
-    if (photoARecadrer) {
+    if (photoARecadrer && photoARecadrer !== apercuRecto) {
       URL.revokeObjectURL(photoARecadrer)
     }
     setPhotoARecadrer(null)
@@ -476,7 +457,7 @@ function Publication() {
   }
 
   const annulerRecadrage = () => {
-    if (photoARecadrer) {
+    if (photoARecadrer && photoARecadrer !== apercuRecto) {
       URL.revokeObjectURL(photoARecadrer)
     }
     setPhotoARecadrer(null)
@@ -518,8 +499,9 @@ function Publication() {
   const continuerDepuisPosition = () => {
     setErreurPosition('')
     setErreur('')
-    if (positionCni === 'autre' && !positionPrecision.trim()) {
-      setErreurPosition('Précisez le lieu lorsque vous choisissez  un « Autre lieu ».')
+    if (['autre', 'commissariat', 'mairie'].includes(positionCni) && !positionPrecision.trim()) {
+      const label = positionCni === 'autre' ? 'le lieu' : positionCni === 'commissariat' ? 'le nom du commissariat' : 'le nom de la mairie'
+      setErreurPosition(`Précisez ${label} lorsque vous choisissez cette option.`)
       return
     }
     aller('resume')
@@ -532,7 +514,7 @@ function Publication() {
       aller('formulaire')
       return
     }
-    if (positionCni === 'autre' && !positionPrecision.trim()) {
+    if (['autre', 'commissariat', 'mairie'].includes(positionCni) && !positionPrecision.trim()) {
       setErreur('Précisez le lieu de la carte.')
       aller('position')
       return
@@ -808,18 +790,21 @@ function Publication() {
                   Photo manquante
                 </div>
               )}
-              <label className="btn-outline inline-block cursor-pointer text-sm !py-2.5 !px-4">
-                {champs.photo_titulaire_base64 ? 'Remplacer la photo' : 'Ajouter la photo du titulaire'}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    gererChoixPhotoTitulaire(e.target.files?.[0])
-                    e.target.value = ''
-                  }}
-                />
-              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  if (fichierRecto) {
+                    if (photoARecadrer && photoARecadrer !== apercuRecto) {
+                      URL.revokeObjectURL(photoARecadrer)
+                    }
+                    setPhotoARecadrer(URL.createObjectURL(fichierRecto))
+                  }
+                }}
+                disabled={!fichierRecto}
+                className="btn-outline inline-block cursor-pointer text-sm !py-2.5 !px-4 disabled:opacity-40"
+              >
+                {champs.photo_titulaire_base64 ? 'Remplacer la photo' : 'Recadrer depuis le recto'}
+              </button>
             </div>
             {erreursFormulaire.photo_titulaire_base64 && (
               <p className="text-red-600 text-xs -mt-4 mb-4">{erreursFormulaire.photo_titulaire_base64}</p>
@@ -910,7 +895,39 @@ function Publication() {
                   label="Précisez le lieu"
                   required
                   value={positionPrecision}
-                  placeholder="Ex : gare routière ,proche de la mosquée"
+                  placeholder="Ex : gare routière, proche de la mosquée"
+                  erreur={erreurPosition}
+                  onChange={(e) => {
+                    setPositionPrecision(e.target.value)
+                    setErreurPosition('')
+                  }}
+                />
+              </div>
+            )}
+
+            {positionCni === 'commissariat' && (
+              <div className="mb-5 animate-fade-up">
+                <ChampTexte
+                  label="Nom du commissariat"
+                  required
+                  value={positionPrecision}
+                  placeholder="Ex : Commissariat central de Douala"
+                  erreur={erreurPosition}
+                  onChange={(e) => {
+                    setPositionPrecision(e.target.value)
+                    setErreurPosition('')
+                  }}
+                />
+              </div>
+            )}
+
+            {positionCni === 'mairie' && (
+              <div className="mb-5 animate-fade-up">
+                <ChampTexte
+                  label="Nom de la mairie"
+                  required
+                  value={positionPrecision}
+                  placeholder="Ex : Mairie de Yaoundé"
                   erreur={erreurPosition}
                   onChange={(e) => {
                     setPositionPrecision(e.target.value)

@@ -87,6 +87,27 @@ def rechercher_annonces(request):
         resultats = resultats.filter(numero_carte__icontains=numero_carte)
 
     serializer = RechercheAnnonceSerializer(resultats, many=True)
+
+    telephone = request.query_params.get('telephone', '').strip()
+    if telephone:
+        from apps.utilisateurs.models import Utilisateur
+        utilisateur = Utilisateur.objects.filter(telephone=telephone).first()
+        if utilisateur and resultats.exists():
+            critere = []
+            if nom:
+                critere.append(f"nom={nom}")
+            if prenom:
+                critere.append(f"prénom={prenom}")
+            if date_naissance:
+                critere.append(f"date={date_naissance}")
+            if numero_carte:
+                critere.append(f"carte={numero_carte}")
+            Historique.enregistrer(
+                utilisateur=utilisateur,
+                type_action=Historique.TypeAction.CONSULTATION,
+                description=f"Recherche de CNI effectuée ({', '.join(critere) if critere else 'aucun critère'})",
+            )
+
     return Response(serializer.data)
 
 

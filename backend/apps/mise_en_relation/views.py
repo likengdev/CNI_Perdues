@@ -49,12 +49,6 @@ def confirmer_restitution(request, mise_en_relation_id):
     mise_en_relation.confirmation_beneficiaire = True
     mise_en_relation.save()
 
-    Historique.enregistrer(
-        utilisateur=mise_en_relation.beneficiaire,
-        type_action=Historique.TypeAction.RESTITUTION,
-        description=f"Restitution confirmée par le bénéficiaire pour l'annonce #{mise_en_relation.annonce.id}",
-    )
-
     return Response(MiseEnRelationDetailSerializer(mise_en_relation).data)
 
 

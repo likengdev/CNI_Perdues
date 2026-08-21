@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   Users, UserCheck, UserPlus, FileText,
-  CheckCircle, ShieldCheck,
+  CheckCircle, ShieldCheck, XCircle,
   Activity, Bell, ChevronRight, CalendarDays, RefreshCw
 } from 'lucide-react'
 import MiseEnPageAdmin from '../../components/layout/MiseEnPageAdmin'
@@ -134,6 +134,7 @@ function TableauDeBord() {
           <CarteStatistique libelle="Bénéficiaires" valeur={stats.nombre_beneficiaires} couleur="#14b8a6" icon={UserCheck} />
           <CarteStatistique libelle="Annonces au total" valeur={stats.annonces_total} couleur="#64748b" icon={FileText} />
           <CarteStatistique libelle="Annonces publiées" valeur={stats.annonces_publiees} couleur="#10b981" icon={CheckCircle} />
+          <CarteStatistique libelle="Annonces rejetées" valeur={stats.annonces_rejetees} couleur="#ef4444" icon={XCircle} />
           <CarteStatistique libelle="CNI restituées" valeur={stats.cni_restituees} couleur="#ec4899" icon={ShieldCheck} />
         </motion.div>
 

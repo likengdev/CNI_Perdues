@@ -2,6 +2,8 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
+from apps.historique.models import Historique
+
 from .models import Utilisateur
 from .serializers import (
     CompleterProfilSerializer,
@@ -42,6 +44,11 @@ def inscrire_declarant(request):
     serializer = InscriptionDeclarantSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     utilisateur = serializer.save()
+    Historique.enregistrer(
+        utilisateur=utilisateur,
+        type_action=Historique.TypeAction.INSCRIPTION,
+        description=f"Inscription d'un déclarant ({utilisateur.prenom} {utilisateur.nom})",
+    )
     return Response(
         UtilisateurSerializer(utilisateur).data,
         status=status.HTTP_201_CREATED,
@@ -54,6 +61,11 @@ def inscrire_beneficiaire(request):
     serializer = InscriptionBeneficiaireSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     utilisateur = serializer.save()
+    Historique.enregistrer(
+        utilisateur=utilisateur,
+        type_action=Historique.TypeAction.INSCRIPTION,
+        description=f"Inscription d'un bénéficiaire ({utilisateur.prenom} {utilisateur.nom})",
+    )
     return Response(
         UtilisateurSerializer(utilisateur).data,
         status=status.HTTP_201_CREATED,

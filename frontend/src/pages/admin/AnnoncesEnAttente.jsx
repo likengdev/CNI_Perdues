@@ -129,7 +129,7 @@ function AnnoncesEnAttente() {
   const statutEffectif = (a) => decisions[a.id] || a.statut || 'en_attente'
 
   const nombreEnAttente = (donnees || []).filter((a) => statutEffectif(a) === 'en_attente').length
-  const nombreAcceptees = (donnees || []).filter((a) => statutEffectif(a) === 'publiee').length
+  const nombreAcceptees = (donnees || []).filter((a) => ['publiee', 'en_cours', 'restituee'].includes(statutEffectif(a))).length
   const nombreRejetees = (donnees || []).filter((a) => statutEffectif(a) === 'rejetee').length
 
   const valider = async (id) => {

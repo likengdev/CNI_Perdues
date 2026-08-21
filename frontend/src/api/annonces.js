@@ -23,13 +23,14 @@ export function rejeterAnnonce(id, motifRejet){
 
 }
 
-export function rechercherAnnonces(nom, prenom, dateNaissance, numeroCarte) {
+export function rechercherAnnonces(nom, prenom, dateNaissance, numeroCarte, telephone) {
   return clientApi.get('/annonces/rechercher/', {
     params: {
       nom: nom || undefined,
       prenom: prenom || undefined,
       date_naissance: dateNaissance || undefined,
       numero_carte: numeroCarte || undefined,
+      telephone: telephone || undefined,
     },
   })
 }

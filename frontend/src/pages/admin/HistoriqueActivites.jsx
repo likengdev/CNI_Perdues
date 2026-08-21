@@ -7,14 +7,11 @@ import {
   CalendarDays,
   Clock,
   Download,
-  Eye,
   FilterX,
   Megaphone,
   Search,
-  Sparkles,
   Undo2,
   UserPlus,
-  XCircle,
 } from 'lucide-react'
 import MiseEnPageAdmin from '../../components/layout/MiseEnPageAdmin'
 import clientApi, { extraireMessageErreur } from '../../api/client'
@@ -24,11 +21,9 @@ const PAR_PAGE = 8
 const CONFIGS_ACTION = {
   publication: { libelle: 'Publication', Icon: Megaphone, bulle: 'bg-sky-500', badge: 'bg-sky-50 text-sky-700 border-sky-200', puce: 'bg-sky-500' },
   validation: { libelle: 'Validation', Icon: BadgeCheck, bulle: 'bg-emerald-500', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', puce: 'bg-emerald-500' },
-  rejet: { libelle: 'Rejet', Icon: XCircle, bulle: 'bg-red-500', badge: 'bg-red-50 text-red-700 border-red-200', puce: 'bg-red-500' },
-  consultation: { libelle: 'Consultation', Icon: Eye, bulle: 'bg-slate-500', badge: 'bg-slate-100 text-slate-600 border-slate-200', puce: 'bg-slate-500' },
+  rejet: { libelle: 'Rejet', Icon: Megaphone, bulle: 'bg-red-500', badge: 'bg-red-50 text-red-700 border-red-200', puce: 'bg-red-500' },
   restitution: { libelle: 'Restitution', Icon: Undo2, bulle: 'bg-violet-500', badge: 'bg-violet-50 text-violet-700 border-violet-200', puce: 'bg-violet-500' },
   inscription: { libelle: 'Inscription', Icon: UserPlus, bulle: 'bg-teal-500', badge: 'bg-teal-50 text-teal-700 border-teal-200', puce: 'bg-teal-500' },
-  autre: { libelle: 'Autre', Icon: Sparkles, bulle: 'bg-amber-500', badge: 'bg-amber-50 text-amber-700 border-amber-200', puce: 'bg-amber-500' },
 }
 
 const ORDRE_CARTES = [
@@ -36,10 +31,8 @@ const ORDRE_CARTES = [
   { cle: 'publication', libelle: 'Publications', Icon: Megaphone, bulle: 'bg-sky-500' },
   { cle: 'validation', libelle: 'Validations', Icon: BadgeCheck, bulle: 'bg-emerald-500' },
   { cle: 'restitution', libelle: 'Restitutions', Icon: Undo2, bulle: 'bg-violet-500' },
-  { cle: 'rejet', libelle: 'Rejets', Icon: XCircle, bulle: 'bg-red-500' },
-  { cle: 'consultation', libelle: 'Consultations', Icon: Eye, bulle: 'bg-slate-500' },
+  { cle: 'rejet', libelle: 'Rejets', Icon: Megaphone, bulle: 'bg-red-500' },
   { cle: 'inscription', libelle: 'Inscriptions', Icon: UserPlus, bulle: 'bg-teal-500' },
-  { cle: 'autre', libelle: 'Autres', Icon: Sparkles, bulle: 'bg-amber-500' },
 ]
 
 const formaterDate = (valeur) => {
@@ -120,7 +113,6 @@ function exporterPDF(entrees, stats) {
       <span><strong>Validations :</strong> ${stats.par_type?.validation ?? 0}</span>
       <span><strong>Restitutions :</strong> ${stats.par_type?.restitution ?? 0}</span>
       <span><strong>Rejets :</strong> ${stats.par_type?.rejet ?? 0}</span>
-      <span><strong>Consultations :</strong> ${stats.par_type?.consultation ?? 0}</span>
       <span><strong>Inscriptions :</strong> ${stats.par_type?.inscription ?? 0}</span>
     </div>
   ` : ''
@@ -193,7 +185,6 @@ function HistoriqueActivites() {
   const [filtreRecherche, setFiltreRecherche] = useState('')
   const [filtreType, setFiltreType] = useState('')
   const [filtreDepuis, setFiltreDepuis] = useState('')
-  const [filtreJusqua, setFiltreJusqua] = useState('')
   const [visible, setVisible] = useState(PAR_PAGE)
   const [exportEnCours, setExportEnCours] = useState(false)
 
@@ -220,7 +211,6 @@ function HistoriqueActivites() {
         if (filtreType) params.set('type_action', filtreType)
         if (filtreRecherche) params.set('recherche', filtreRecherche)
         if (filtreDepuis) params.set('depuis', filtreDepuis)
-        if (filtreJusqua) params.set('jusqua', filtreJusqua)
         const chaine = params.toString()
         const { data } = await clientApi.get(`/admin/historique/${chaine ? `?${chaine}` : ''}`)
         if (!actif) return
@@ -234,7 +224,7 @@ function HistoriqueActivites() {
     }
     charger()
     return () => { actif = false }
-  }, [filtreType, filtreRecherche, filtreDepuis, filtreJusqua])
+  }, [filtreType, filtreRecherche, filtreDepuis])
 
   const entreesVisibles = entrees.slice(0, visible)
 
@@ -252,7 +242,7 @@ function HistoriqueActivites() {
     return resultats
   }, [entreesVisibles])
 
-  const filtresActifs = Boolean(filtreType || texte || filtreDepuis || filtreJusqua)
+  const filtresActifs = Boolean(filtreType || texte || filtreDepuis)
 
   const basculerFiltreType = (cle) => {
     if (cle === 'total') {
@@ -267,7 +257,6 @@ function HistoriqueActivites() {
     setFiltreRecherche('')
     setFiltreType('')
     setFiltreDepuis('')
-    setFiltreJusqua('')
   }
 
   const valeurCarte = (cle) => {
@@ -341,7 +330,7 @@ function HistoriqueActivites() {
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm mb-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_180px_160px_160px_auto] gap-3 items-end">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_180px_160px_auto] gap-3 items-end">
             <div className="relative">
               <Search size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               <input
@@ -363,13 +352,6 @@ function HistoriqueActivites() {
               value={filtreDepuis}
               onChange={(e) => setFiltreDepuis(e.target.value)}
               aria-label="À partir du"
-              className={STYLE_CHAMPS}
-            />
-            <input
-              type="date"
-              value={filtreJusqua}
-              onChange={(e) => setFiltreJusqua(e.target.value)}
-              aria-label="Jusqu'au"
               className={STYLE_CHAMPS}
             />
             <div className="flex items-center gap-2">
