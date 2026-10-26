@@ -13,6 +13,7 @@ const REGEX_DATE_CNI = /^\d{2}\.\d{2}\.\d{4}$/
 
 const ETAPES_PROGRESSION = [
   { id: 'compte', label: 'Compte' },
+  { id: 'type', label: 'Type' },
   { id: 'photos', label: 'Photos' },
   { id: 'infos', label: 'Infos' },
   { id: 'lieu', label: 'Lieu' },
@@ -82,10 +83,11 @@ const TAUX_DE_CONFIANCE = [
 
 function indexEtapeActive(etape) {
   if (etape === 'inscription' || etape === 'confirmation-telephone' || etape === 'completer-profil') return 0
-  if (etape === 'recto' || etape === 'verso' || etape === 'extraction') return 1
-  if (etape === 'formulaire') return 2
-  if (etape === 'position') return 3
-  if (etape === 'resume') return 4
+  if (etape === 'type-document') return 1
+  if (etape === 'recto' || etape === 'verso' || etape === 'extraction') return 2
+  if (etape === 'formulaire') return 3
+  if (etape === 'position') return 4
+  if (etape === 'resume') return 5
   return 0
 }
 
@@ -279,6 +281,7 @@ function Publication() {
   const [prenom, setPrenom] = useState('')
   const [ville, setVille] = useState('')
   const [quartier, setQuartier] = useState('')
+  const [typeDocument, setTypeDocument] = useState('cni')
 
   const [fichierRecto, setFichierRecto] = useState(null)
   const [fichierVerso, setFichierVerso] = useState(null)
@@ -331,7 +334,7 @@ function Publication() {
     setChargement(true)
     try {
       await inscrireDeclarant({ telephone, nom, prenom, ville, quartier })
-      aller('recto')
+      aller('type-document')
     } catch (err) {
       const messageTelephone = err.response?.data?.telephone?.[0]
       if (messageTelephone) {
@@ -370,7 +373,7 @@ function Publication() {
       if (!utilisateur.ville || !utilisateur.quartier) {
         aller('completer-profil')
       } else {
-        aller('recto')
+        aller('type-document')
       }
     } catch (err) {
       setErreur(extraireMessageErreur(err, 'Impossible de vérifier ce numéro. Vérifiez votre connexion et réessayez.'))
@@ -390,7 +393,7 @@ function Publication() {
     setChargement(true)
     try {
       await completerProfil(telephone, { ville: ville.trim(), quartier: quartier.trim() })
-      aller('recto')
+      aller('type-document')
     } catch (err) {
       setErreur(extraireMessageErreur(err, 'Impossible de compléter le profil. réessayez.'))
     } finally {
@@ -409,7 +412,7 @@ function Publication() {
     setChargement(true)
     setEtape('extraction')
     try {
-      const { data } = await extraireInformationsCni(fichierRecto, fichierVerso)
+      const { data } = await extraireInformationsCni(fichierRecto, fichierVerso, typeDocument)
       setChamps({
         nom_titulaire: data.nom_titulaire || '',
         prenom_titulaire: data.prenom_titulaire || '',
@@ -419,7 +422,6 @@ function Publication() {
         photo_titulaire_base64: data.photo_titulaire_base64 || '',
       })
       setErreursFormulaire({})
-      
       // Si la photo n'a pas pu être extraite automatiquement, on lance le recadrage manuel avec le recto
       if (!data.photo_titulaire_base64 && fichierRecto) {
         setPhotoARecadrer(URL.createObjectURL(fichierRecto))
@@ -524,8 +526,9 @@ function Publication() {
     try {
       await publierAnnonce({
         telephone_declarant: telephone,
+        type_document: typeDocument,
         photo_recto: fichierRecto,
-        photo_verso: fichierVerso,
+        photo_verso: typeDocument === 'passeport' ? null : fichierVerso,
         nom_titulaire: champs.nom_titulaire.trim(),
         prenom_titulaire: champs.prenom_titulaire.trim(),
         date_naissance: normaliserDateNaissance(champs.date_naissance),
@@ -537,7 +540,7 @@ function Publication() {
       })
       navigue('/publication/confirmation')
     } catch (err) {
-      setErreur(extraireMessageErreur(err, 'La publication a échoué. Vérifiez les champs et rréessayez.'))
+      setErreur(extraireMessageErreur(err, 'La publication a échoué. Vérifiez les champs et réessayez.'))
     } finally {
       setChargement(false)
     }
@@ -557,13 +560,13 @@ function Publication() {
             </span>
             <span className="text-xs font-bold text-brand-700 tracking-widest uppercase">Parcours de déclaration</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-            Déclarez une <span className="text-gradient">CNI trouvée</span>
-          </h2>
-          <p className="mt-3 text-sm sm:text-base text-slate-500 max-w-xl mx-auto leading-relaxed">
-            Aidez son propriétaire à retrouver sa carte nationale d'identité en quelques
-            étapes simples, rapides et sécurisées.
-          </p>
+        <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+          Déclarez un <span className="text-gradient">document trouvé</span>
+        </h2>
+        <p className="mt-3 text-sm sm:text-base text-slate-500 max-w-xl mx-auto leading-relaxed">
+          Aidez son propriétaire à retrouver sa CNI ou son passeport en quelques
+          étapes simples, rapides et sécurisées.
+        </p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-2.5">
             {TAUX_DE_CONFIANCE.map(([libelle, icone]) => (
               <span
@@ -685,13 +688,58 @@ function Publication() {
           </form>
         )}
 
+        {etape === 'type-document' && (
+          <CarteEtape key="type-document" className="space-y-6">
+            <EnteteEtape
+              badge="Étape 1"
+              titre="Quel type de document ?"
+              sousTitre="Sélectionnez le document que vous avez trouvé."
+              icone={ICONES_ETAPES[1]}
+            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => setTypeDocument('cni')}
+                className={`rounded-2xl border px-5 py-6 text-left transition-all ${
+                  typeDocument === 'cni'
+                    ? 'border-brand-500 bg-brand-50 shadow-glow'
+                    : 'border-slate-200 bg-white hover:border-brand-300'
+                }`}
+              >
+                <div className="text-lg font-extrabold text-slate-900">Carte Nationale d'Identité</div>
+                <div className="text-sm text-slate-500 mt-1">Recto + verso requis</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setTypeDocument('passeport')}
+                className={`rounded-2xl border px-5 py-6 text-left transition-all ${
+                  typeDocument === 'passeport'
+                    ? 'border-brand-500 bg-brand-50 shadow-glow'
+                    : 'border-slate-200 bg-white hover:border-brand-300'
+                }`}
+              >
+                <div className="text-lg font-extrabold text-slate-900">Passeport</div>
+                <div className="text-sm text-slate-500 mt-1">Une seule photo (page d'identité)</div>
+              </button>
+            </div>
+            <button type="button" onClick={() => aller('recto')} className="btn-primary w-full">
+              Continuer
+            </button>
+            <BoutonRetour onClick={() => aller('inscription')} label="Retour au compte" />
+          </CarteEtape>
+        )}
+
         {(etape === 'recto' || etape === 'verso') && (
           <CarteEtape key={etape} className="text-center">
             <EnteteEtape
-              badge={etape === 'recto' ? 'Photo 1 / 2' : 'Photo 2 / 2'}
-              titre={`Photographiez le ${etape === 'recto' ? 'recto' : 'verso'}`}
-              sousTitre="Assurez-vous que la carte est bien lisible et bien éclairée."
-              icone={ICONES_ETAPES[1]}
+              badge={typeDocument === 'passeport' ? 'Photo' : (etape === 'recto' ? 'Photo 1 / 2' : 'Photo 2 / 2')}
+              titre={
+                typeDocument === 'passeport'
+                  ? 'Photographiez la page d’identité'
+                  : `Photographiez le ${etape === 'recto' ? 'recto' : 'verso'}`
+              }
+              sousTitre="Assurez-vous que le document est bien lisible et bien éclairé."
+              icone={ICONES_ETAPES[2]}
             />
 
             <div className="mb-7 min-h-[12rem] flex items-center justify-center rounded-3xl bg-gradient-to-br from-slate-50 to-brand-50/40 border border-dashed border-brand-200/70 overflow-hidden relative group">
@@ -737,17 +785,24 @@ function Publication() {
             <div className="mt-8">
               <button
                 type="button"
-                disabled={etape === 'recto' ? !fichierRecto : !fichierVerso}
-                onClick={() => (etape === 'recto' ? aller('verso') : lancerExtraction())}
+                disabled={etape === 'recto' ? !fichierRecto : (typeDocument === 'passeport' ? !fichierRecto : !fichierVerso)}
+                onClick={() => {
+                  if (typeDocument === 'passeport') {
+                    lancerExtraction()
+                    return
+                  }
+                  if (etape === 'recto') aller('verso')
+                  else lancerExtraction()
+                }}
                 className="btn-primary w-full disabled:opacity-40"
               >
-                {etape === 'recto' ? 'Continuer vers le verso' : 'Extraire les informations'}
+                {typeDocument === 'passeport' ? 'Extraire les informations' : (etape === 'recto' ? 'Continuer vers le verso' : 'Extraire les informations')}
               </button>
             </div>
 
             <BoutonRetour
-              onClick={() => aller(etape === 'recto' ? 'inscription' : 'recto')}
-              label={etape === 'recto' ? 'Retour' : 'Retour au recto'}
+              onClick={() => aller(typeDocument === 'passeport' ? 'type-document' : (etape === 'recto' ? 'type-document' : 'recto'))}
+              label={typeDocument === 'passeport' ? 'Retour au type de document' : (etape === 'recto' ? 'Retour au type de document' : 'Retour au recto')}
             />
           </CarteEtape>
         )}

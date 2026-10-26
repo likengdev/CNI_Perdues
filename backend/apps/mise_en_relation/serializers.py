@@ -57,10 +57,11 @@ class DeclencherMiseEnRelationSerializer(serializers.Serializer):
         mise_en_relation.notification_whatsapp_envoyee = True
         mise_en_relation.save()
 
+        libelle_doc = 'passeport' if annonce.type_document == 'passeport' else 'CNI'
         Historique.enregistrer(
             utilisateur=beneficiaire,
             type_action=Historique.TypeAction.AUTRE,
-            description=f"Mise en relation déclenchée pour l'annonce #{annonce.id} (lien WhatsApp : {lien})",
+            description=f"Mise en relation déclenchée pour le {libelle_doc} #{annonce.id} (lien WhatsApp : {lien})",
         )
 
         return mise_en_relation
@@ -74,12 +75,16 @@ class MiseEnRelationDetailSerializer(serializers.ModelSerializer):
     """
 
     annonce_id = serializers.IntegerField(source='annonce.id', read_only=True)
+    annonce_type_document = serializers.CharField(source='annonce.type_document', read_only=True)
     annonce_nom_titulaire = serializers.CharField(source='annonce.nom_titulaire', read_only=True)
     annonce_prenom_titulaire = serializers.CharField(source='annonce.prenom_titulaire', read_only=True)
     annonce_date_naissance = serializers.DateField(source='annonce.date_naissance', read_only=True)
     annonce_lieu_naissance = serializers.CharField(source='annonce.lieu_naissance', read_only=True)
     annonce_numero_carte = serializers.CharField(source='annonce.numero_carte', read_only=True)
     annonce_photo_titulaire = serializers.ImageField(source='annonce.photo_titulaire', read_only=True)
+    annonce_position_cni = serializers.CharField(source='annonce.position_cni', read_only=True)
+    annonce_position_precision = serializers.CharField(source='annonce.position_precision', read_only=True)
+    annonce_position_cni_libelle = serializers.SerializerMethodField()
 
     declarant_nom = serializers.CharField(source='annonce.declarant.nom', read_only=True)
     declarant_prenom = serializers.CharField(source='annonce.declarant.prenom', read_only=True)
@@ -89,14 +94,18 @@ class MiseEnRelationDetailSerializer(serializers.ModelSerializer):
     beneficiaire_prenom = serializers.CharField(source='beneficiaire.prenom', read_only=True)
     beneficiaire_telephone = serializers.CharField(source='beneficiaire.telephone', read_only=True)
 
+    def get_annonce_position_cni_libelle(self, objet):
+        return objet.annonce.get_position_cni_display()
+
     class Meta:
         model = MiseEnRelation
         fields = [
             'id', 'confirmation_beneficiaire', 'cloture_administrateur',
             'date_expiration', 'date_creation',
-            'annonce_id', 'annonce_nom_titulaire', 'annonce_prenom_titulaire',
+            'annonce_id', 'annonce_type_document', 'annonce_nom_titulaire', 'annonce_prenom_titulaire',
             'annonce_date_naissance', 'annonce_lieu_naissance',
             'annonce_numero_carte', 'annonce_photo_titulaire',
+            'annonce_position_cni', 'annonce_position_precision', 'annonce_position_cni_libelle',
             'declarant_nom', 'declarant_prenom', 'declarant_telephone',
             'beneficiaire_nom', 'beneficiaire_prenom', 'beneficiaire_telephone',
         ]

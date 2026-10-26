@@ -27,20 +27,40 @@ class Annonce(ModeleHorodate):
         RESTITUEE = 'restituee', 'Restituée'
         REJETEE = 'rejetee', 'Rejetée'
 
+    class TypeDocument(models.TextChoices):
+        CNI = 'cni', "Carte Nationale d'Identité"
+        PASSEPORT = 'passeport', 'Passeport'
+
     declarant = models.ForeignKey(
         Utilisateur,
         on_delete=models.CASCADE,
         related_name='annonces_publiees',
     )
 
+    type_document = models.CharField(
+        max_length=20,
+        choices=TypeDocument.choices,
+        default=TypeDocument.CNI,
+        db_index=True,
+    )
+
     photo_recto = models.ImageField(upload_to='cni/recto/')
-    photo_verso = models.ImageField(upload_to='cni/verso/')
+    photo_verso = models.ImageField(
+        upload_to='cni/verso/',
+        null=True,
+        blank=True,
+        help_text="Obligatoire pour une CNI, absente pour un passeport.",
+    )
 
     nom_titulaire = models.CharField(max_length=100)
     prenom_titulaire = models.CharField(max_length=100)
     date_naissance = models.DateField()
     lieu_naissance = models.CharField(max_length=150)
-    numero_carte = models.CharField(max_length=50)
+    numero_carte = models.CharField(
+        max_length=50,
+        verbose_name="numéro du document",
+        help_text="Numéro de la CNI ou du passeport.",
+    )
     photo_titulaire = models.ImageField(upload_to='cni/titulaire/')
 
     position_cni = models.CharField(
@@ -66,7 +86,8 @@ class Annonce(ModeleHorodate):
         verbose_name_plural = "Annonces"
 
     def __str__(self):
-        return f"CNI de {self.prenom_titulaire} {self.nom_titulaire} — {self.get_statut_display()}"
+        libelle = 'Passeport' if self.type_document == self.TypeDocument.PASSEPORT else 'CNI'
+        return f"{libelle} de {self.prenom_titulaire} {self.nom_titulaire} — {self.get_statut_display()}"
 
     def clean(self):
         if self.position_cni == self.PositionCNI.AUTRE and not self.position_precision:

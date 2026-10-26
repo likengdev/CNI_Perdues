@@ -23,9 +23,22 @@ class ServiceValidation:
         return ""
 
     def valider_numero_carte(self, valeur_brute):
-        if re.fullmatch(r"[A-Z]{1,2}\d{8}", (valeur_brute or "").strip()):
-            return valeur_brute.strip()
+        valeur = (valeur_brute or "").strip().upper().replace('<', '')
+        if re.fullmatch(r"[A-Z]{1,2}\d{8}", valeur):
+            return valeur
         return ""
+
+    def valider_numero_passeport(self, valeur_brute):
+        valeur = (valeur_brute or "").strip().upper().replace('<', '').replace(' ', '')
+        if re.fullmatch(r"[A-Z]{1,2}\d{6,9}", valeur):
+            return valeur
+        if re.fullmatch(r"[A-Z0-9<]{6,9}", valeur):
+            return valeur
+        return ""
+
+    def normaliser_numero_document(self, valeur_brute):
+        valeur = (valeur_brute or "").strip().upper().replace('<', '').replace(' ', '')
+        return valeur
 
     def nettoyer_texte(self, valeur):
         return (valeur or "").strip()

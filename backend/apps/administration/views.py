@@ -64,7 +64,7 @@ class DashboardStatsView(APIView):
             "recherches_effectuees": AlerteRecherche.objects.count(),
             "taux_restitution": round((cni_restituees / annonces_total * 100), 2) if annonces_total else 0.0,
             "dernieres_inscriptions": list(Utilisateur.objects.order_by('-date_creation')[:5].values('id', 'nom', 'prenom', 'telephone')),
-            "dernieres_annonces": list(Annonce.objects.order_by('-date_creation')[:5].values('id', 'nom_titulaire', 'prenom_titulaire', 'statut')),
+            "dernieres_annonces": list(Annonce.objects.order_by('-date_creation')[:5].values('id', 'nom_titulaire', 'prenom_titulaire', 'statut', 'type_document')),
             "dernieres_restitutions": list(MiseEnRelation.objects.filter(cloture_administrateur=True).order_by('-date_cloture')[:5].values('id', 'annonce', 'date_cloture')),
             "dernieres_activites": list(Historique.objects.order_by('-date_creation')[:10].values('id', 'type_action', 'description', 'date_creation')),
         }
@@ -101,7 +101,7 @@ class BeneficiaireViewSet(ReadOnlyModelViewSet):
 
 
 class AnnonceViewSet(ReadOnlyModelViewSet):
-    """Consultation des annonces côté administrateur (validation/rejet restent sur les endpoints dédiés de l'app annonces)."""
+    """Consultation des annonces côté administrateur."""
 
     permission_classes = [EstAdministrateurAuthentifie]
     serializer_class = AnnonceSerializer
@@ -112,6 +112,10 @@ class AnnonceViewSet(ReadOnlyModelViewSet):
         if statut:
             statuts = [s.strip() for s in statut.split(',') if s.strip()]
             queryset = queryset.filter(statut__in=statuts)
+        type_document = self.request.query_params.get('type_document')
+        if type_document:
+            type_documents = [t.strip() for t in type_document.split(',') if t.strip()]
+            queryset = queryset.filter(type_document__in=type_documents)
         return queryset
 
 

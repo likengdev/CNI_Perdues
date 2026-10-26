@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Navigate, useLocation } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FondLumineux } from '../components/annonces/ComposantsParcours'
 import { confirmerRestitution } from '../api/miseEnRelation'
@@ -17,6 +17,7 @@ import {
   Clock,
   PartyPopper,
   ImageOff,
+  LogOut,
 } from 'lucide-react'
 
 function formaterDate(valeur) {
@@ -64,6 +65,7 @@ function LigneInfo({ icone, libelle, valeur }) {
 
 function PageBeneficiaire() {
   const { state } = useLocation()
+  const navigue = useNavigate()
 
   const m = state?.miseEnRelation
 
@@ -225,7 +227,7 @@ function PageBeneficiaire() {
               <div className="rounded-2xl bg-gradient-to-br from-emerald-50/70 to-white border border-emerald-100/80 p-5 sm:p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wider mb-1">Déclarant</p>
+                    <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wider mb-1">Détenteur de votre CNI</p>
                     <p className="text-xl font-extrabold text-slate-900 tracking-tight">
                       {m.declarant_prenom} {m.declarant_nom}
                     </p>
@@ -239,6 +241,22 @@ function PageBeneficiaire() {
                       <p className="text-lg font-extrabold text-slate-900 tracking-tight">{m.declarant_telephone}</p>
                     </div>
                   </div>
+                </div>
+
+                <div className="mt-5 pt-5 border-t border-emerald-100/80">
+                  <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wider mb-1.5">
+                    Où se trouve votre CNI actuellement ?
+                  </p>
+                  <p className="font-bold text-slate-900 leading-snug">
+                    {m.annonce_position_cni_libelle || '—'}
+                    {m.annonce_position_precision ? (
+                      <span className="text-slate-700"> — {m.annonce_position_precision}</span>
+                    ) : null}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                    Votre CNI se trouve actuellement à la position que le déclarant a renseignée dans
+                    la partie 4 lors de la publication de la CNI trouvée.
+                  </p>
                 </div>
               </div>
             </div>
@@ -269,7 +287,7 @@ function PageBeneficiaire() {
                 <h2 className="text-2xl font-extrabold text-slate-900 mb-2 tracking-tight">Restitution confirmée</h2>
                 <p className="text-slate-500 max-w-md mx-auto leading-relaxed">
                   Merci {m.beneficiaire_prenom} ! Votre confirmation a bien été enregistrée.
-                  L'administration va clôturer votre dossier.
+                  L'administrateur  va clôturer votre dossier.
                 </p>
               </motion.div>
             ) : (
@@ -285,11 +303,11 @@ function PageBeneficiaire() {
                   </div>
                   <h2 className="text-2xl font-extrabold text-slate-900 mb-2 tracking-tight">Comment ça se passe ?</h2>
                   <p className="text-slate-500 text-sm leading-relaxed mb-8 max-w-lg mx-auto">
-                    Contactez le déclarant au{' '}
+                    Contactez le détenteur de votre cni  au{' '}
                     <span className="font-bold text-slate-700 bg-brand-50 px-2 py-0.5 rounded-md">
                       {m.declarant_telephone}
                     </span>{' '}
-                    pour convenir d'un lieu et d'un horaire de remise. Une fois votre carte récupérée,
+                    pour convenir d'un lieu et d'un horaire de remise. Une fois votre carte retrouvée,
                     confirmez-le ici pour clôturer votre demande.
                   </p>
                   <motion.button
@@ -308,7 +326,7 @@ function PageBeneficiaire() {
                     ) : (
                       <>
                         <CheckCircle2 size={18} />
-                        Je confirme avoir récupéré ma CNI
+                        Je confirme avoir retrouvé ma carte nationale d'identité sur ce site
                       </>
                     )}
                   </motion.button>
@@ -326,6 +344,24 @@ function PageBeneficiaire() {
             <p className="text-xs text-slate-400">
               Cette mise en relation expire automatiquement le {formaterDate(m.date_expiration)}.
             </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, delay: 0.5 }}
+            className="flex justify-center pt-2"
+          >
+            <motion.button
+              type="button"
+              onClick={() => navigue('/')}
+              whileHover={{ scale: 1.03, y: -2 }}
+              whileTap={{ scale: 0.97 }}
+              className="btn-outline inline-flex items-center justify-center gap-2 !px-8 !py-3.5"
+            >
+              <LogOut size={16} />
+              Quitter
+            </motion.button>
           </motion.div>
         </div>
       </main>

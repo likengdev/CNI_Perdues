@@ -1,8 +1,9 @@
 from rest_framework import status
-from rest_framework.decorators import api_view, parser_classes
+from rest_framework.decorators import api_view, parser_classes, throttle_classes
 from rest_framework.generics import get_object_or_404
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
+from rest_framework.throttling import SimpleRateThrottle
 from rest_framework.views import APIView
 from apps.administration.permissions import EstAdministrateurAuthentifie
 from apps.alertes.models import AlerteRecherche
@@ -21,21 +22,41 @@ from .serializers import (
 from .services.pipeline import PipelineExtractionCNI
 
 
+class ExtractionThrottle(SimpleRateThrottle):
+    """
+    Limite le nombre d'extractions par adresse IP pour éviter un
+    abus de la ressource OCR (coûteuse en calcul).
+    """
+    scope = 'extraction'
+
+    def get_cache_key(self, request, view):
+        if request.user and request.user.is_authenticated:
+            ident = request.user.pk
+        else:
+            ident = self.get_ident(request)
+        return self.cache_format % {'scope': self.scope, 'ident': ident}
+
+
 @api_view(['POST'])
 @parser_classes([MultiPartParser])
+@throttle_classes([ExtractionThrottle])
 def extraire_informations_cni(request):
     """
-    Étape 1 du parcours déclarant (section 6.1, étapes 4-6) : extraction
-    docTR, prévisualisation avant publication définitive. Rien n'est
-    encore enregistré en base ici.
+    Étape 1 du parcours déclarant : extraction docTR, prévisualisation.
     """
     serializer = ExtractionCNISerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
 
+    donnees = serializer.validated_data
+    type_document = donnees.get('type_document') or 'cni'
+    photo_recto = donnees['photo_recto']
+    photo_verso = donnees.get('photo_verso')
+
     pipeline = PipelineExtractionCNI()
     donnees_extraites = pipeline.executer(
-        fichier_recto=serializer.validated_data['photo_recto'],
-        fichier_verso=serializer.validated_data['photo_verso'],
+        fichier_recto=photo_recto,
+        fichier_verso=photo_verso,
+        type_document=type_document,
     )
 
     resultat = ExtractionCNIResultSerializer(donnees_extraites)
@@ -62,21 +83,27 @@ def publier_annonce(request):
 
 @api_view(['GET'])
 def rechercher_annonces(request):
-    """
-    Recherche d'annonces publiées par nom/prénom (section 7.C). Le
-    paramètre optionnel date_naissance permet d'affiner en cas
-    d'homonymie (plusieurs personnes portant le même nom/prénom).
-    Seules les annonces au statut "publiee" sont visibles.
-    """
+    """Recherche d'annonces publiées."""
+    from rest_framework.exceptions import ValidationError
+
     ServiceExpirationMiseEnRelation().nettoyer()
 
-    nom = request.query_params.get('nom', '').strip()
-    prenom = request.query_params.get('prenom', '').strip()
+    import re
+    normaliser = lambda v: re.sub(r'\s+', ' ', v).strip() if v else ''
+    nom = normaliser(request.query_params.get('nom', ''))
+    prenom = normaliser(request.query_params.get('prenom', ''))
     date_naissance = request.query_params.get('date_naissance', '').strip()
-    numero_carte = request.query_params.get('numero_carte', '').strip()
+    numero_carte = request.query_params.get('numero_carte', '') or request.query_params.get('numero', '')
+    numero_carte = normaliser(numero_carte).upper().replace('<', '').replace(' ', '')
+    type_document = normaliser(request.query_params.get('type_document', '')).lower()
+
+    if not any([nom, prenom, date_naissance, numero_carte]):
+        return Response({'detail': 'Au moins un critère de recherche est requis.'}, status=status.HTTP_400_BAD_REQUEST)
 
     resultats = Annonce.objects.filter(statut=Annonce.StatutAnnonce.PUBLIEE)
 
+    if type_document in ['cni', 'passeport']:
+        resultats = resultats.filter(type_document=type_document)
     if nom:
         resultats = resultats.filter(nom_titulaire__icontains=nom)
     if prenom:
@@ -84,7 +111,7 @@ def rechercher_annonces(request):
     if date_naissance:
         resultats = resultats.filter(date_naissance=date_naissance)
     if numero_carte:
-        resultats = resultats.filter(numero_carte__icontains=numero_carte)
+        resultats = resultats.filter(numero_carte__iexact=numero_carte)
 
     serializer = RechercheAnnonceSerializer(resultats, many=True)
 
@@ -101,11 +128,14 @@ def rechercher_annonces(request):
             if date_naissance:
                 critere.append(f"date={date_naissance}")
             if numero_carte:
-                critere.append(f"carte={numero_carte}")
+                critere.append(f"numero={numero_carte}")
+            if type_document:
+                critere.append(f"type={type_document}")
+            libelle = 'document' if type_document == 'passeport' else 'CNI'
             Historique.enregistrer(
                 utilisateur=utilisateur,
                 type_action=Historique.TypeAction.CONSULTATION,
-                description=f"Recherche de CNI effectuée ({', '.join(critere) if critere else 'aucun critère'})",
+                description=f"Recherche de {libelle} effectuée ({', '.join(critere) if critere else 'aucun critère'})",
             )
 
     return Response(serializer.data)
@@ -132,10 +162,11 @@ class ValiderAnnonceView(APIView):
         annonce.statut = Annonce.StatutAnnonce.PUBLIEE
         annonce.save(update_fields=['statut', 'date_modification'])
 
+        libelle_doc = 'passeport' if annonce.type_document == 'passeport' else 'CNI'
         Historique.enregistrer(
-            utilisateur=annonce.declarant,
-            type_action=Historique.TypeAction.VALIDATION,
-            description=f"Annonce #{annonce.id} validée et publiée par l'administrateur",
+            utilisateur=declarant,
+            type_action=Historique.TypeAction.PUBLICATION,
+            description=f"{libelle_doc} #{annonce.id} publiée par {declarant}",
         )
 
         return Response(
@@ -170,10 +201,12 @@ class RejeterAnnonceView(APIView):
         annonce.motif_rejet = motif
         annonce.save(update_fields=['statut', 'motif_rejet', 'date_modification'])
 
+        libelle_doc = 'passeport' if annonce.type_document == 'passeport' else 'CNI'
+        libelle_doc = 'passeport' if annonce.type_document == 'passeport' else 'CNI'
         Historique.enregistrer(
             utilisateur=annonce.declarant,
             type_action=Historique.TypeAction.REJET,
-            description=f"Annonce #{annonce.id} rejetée par l'administrateur (motif : {motif})",
+            description=f"{libelle_doc} #{annonce.id} rejeté(e) par l'administrateur (motif : {motif})",
         )
 
         return Response(

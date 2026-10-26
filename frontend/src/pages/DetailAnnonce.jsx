@@ -267,10 +267,14 @@ function DetailAnnonce() {
                 <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-600">
                   <Lock size={14} />
                 </span>
-                <p className="text-sm text-slate-600 leading-relaxed">
-                  Si cette photo est bien la vôtre, cliquez sur « Oui, c'est moi » pour accéder
-                  aux coordonnées de la personne qui a retrouvé votre carte et organiser sa récupération.
-                </p>
+<p className="text-sm text-slate-600 leading-relaxed">
+                Si cette photo est bien la vôtre, cliquez sur « Oui, c'est moi » pour accéder
+                aux coordonnées de la personne qui a retrouvé votre carte et organiser sa récupération.
+              </p>
+              <p className="text-sm text-slate-600 leading-relaxed mt-2">
+                Votre carte d'identité se trouve actuellement { annonce.commissariat ? `en ma possession, soit au commissariat ${annonce.commissariat}` : 'en possession du déclarant' }{ annonce.mairie ? `, soit à la mairie ${annonce.mairie}` : '' }{ annonce.commissariat || annonce.mairie ? ' soit à un autre lieu bien expliqué par celui qui a trouvé la carte' : '' }.
+              </p>
+
               </div>
             </motion.div>
 

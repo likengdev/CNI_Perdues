@@ -6,6 +6,7 @@ app_name = 'annonces'
 
 urlpatterns = [
     path('extraire/', views.extraire_informations_cni, name='extraire-informations'),
+    path('extraire-passeport/', views.extraire_informations_cni, name='extraire-passeport'),
     path('publier/', views.publier_annonce, name='publier-annonce'),
     path('rechercher/', views.rechercher_annonces, name='rechercher-annonces'),
     path('<int:pk>/valider/', views.ValiderAnnonceView.as_view(), name='valider-annonce'),

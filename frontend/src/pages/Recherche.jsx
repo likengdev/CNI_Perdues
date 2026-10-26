@@ -17,6 +17,7 @@ import {
   User,
   CheckCircle2,
   Sparkles,
+  SkipForward,
 } from 'lucide-react'
 
 const REGEX_TELEPHONE_CM = /^6\d{8}$/
@@ -26,10 +27,6 @@ function validerTelephone(valeur) {
     return 'Le numéro doit contenir 9 chiffres et commencer par 6 (ex : 699000000).'
   }
   return ''
-}
-
-const stagger = {
-  animate: { transition: { staggerChildren: 0.08 } },
 }
 
 const fadeChild = {
@@ -45,7 +42,7 @@ function ChampFormulaire({ label, icon: Icon, children, erreur }) {
         {label}
       </label>
       {children}
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {erreur && (
           <motion.p
             initial={{ opacity: 0, height: 0 }}
@@ -76,6 +73,8 @@ function Recherche() {
   const [prenomInscription, setPrenomInscription] = useState('')
   const [prenom, setPrenom] = useState(prenomInit)
   const [nom, setNom] = useState(nomInit)
+  const [numeroCarte, setNumeroCarte] = useState('')
+  const [etapeRecherche, setEtapeRecherche] = useState('cni')
   const [chargement, setChargement] = useState(false)
   const [erreur, setErreur] = useState('')
   const [erreurTelephone, setErreurTelephone] = useState('')
@@ -107,6 +106,10 @@ function Recherche() {
         prenom: prenomInscription.trim(),
       })
       setEtape('recherche')
+      setNumeroCarte('')
+      setNom(nomInscription.trim())
+      setPrenom(prenomInscription.trim())
+      setEtapeRecherche('cni')
     } catch (err) {
       setErreur(extraireMessageErreur(err, "Erreur lors de l'inscription. Vérifiez les champs."))
     } finally {
@@ -128,6 +131,10 @@ function Recherche() {
       const { data } = await verifierTelephone(telephone)
       if (data.inscrit) {
         setEtape('recherche')
+        setNumeroCarte('')
+        setNom(data.nom || '')
+        setPrenom(data.prenom || '')
+        setEtapeRecherche('cni')
       } else {
         setErreur('Ce numéro n\'est pas encore inscrit. Créez votre compte pour continuer.')
         setMode('inscription')
@@ -139,16 +146,26 @@ function Recherche() {
     }
   }
 
-  const executerRecherche = async (nomRecherche, prenomRecherche) => {
+  const executerRecherche = async (nomRecherche, prenomRecherche, numeroCarteRecherche) => {
     setErreur('')
     setChargement(true)
+    const normaliser = (val) => val.replace(/\s+/g, ' ').trim()
+    const nomNettoye = normaliser(nomRecherche)
+    const prenomNettoye = normaliser(prenomRecherche)
+    const carteNettoyee = numeroCarteRecherche ? normaliser(numeroCarteRecherche) : undefined
     try {
-      const { data } = await rechercherAnnonces(nomRecherche.trim(), prenomRecherche.trim(), undefined, undefined, telephone)
+      const { data } = await rechercherAnnonces(
+        nomNettoye,
+        prenomNettoye,
+        undefined,
+        carteNettoyee,
+        telephone,
+      )
       navigue('/recherche/resultats', {
         state: {
           resultats: data,
-          nom: nomRecherche.trim(),
-          prenom: prenomRecherche.trim(),
+          nom: nomNettoye,
+          prenom: prenomNettoye,
           telephone,
         },
       })
@@ -162,16 +179,17 @@ function Recherche() {
   useEffect(() => {
     if (!nomInit || !prenomInit) return
     let annule = false
+    const normaliser = (val) => val.replace(/\s+/g, ' ').trim()
     const executer = async () => {
       try {
-        const { data } = await rechercherAnnonces(nomInit.trim(), prenomInit.trim(), undefined, undefined, telephone)
+        const { data } = await rechercherAnnonces(normaliser(nomInit), normaliser(prenomInit), undefined, undefined, telephone)
         if (annule) return
         navigue('/recherche/resultats', {
           replace: true,
           state: {
             resultats: data,
-            nom: nomInit.trim(),
-            prenom: prenomInit.trim(),
+            nom: normaliser(nomInit),
+            prenom: normaliser(prenomInit),
             telephone,
           },
         })
@@ -186,13 +204,83 @@ function Recherche() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nomInit, prenomInit, navigue])
 
-  const lancerRecherche = (e) => {
+  const lancerRecherche = async (e) => {
     e.preventDefault()
-    if (!nom.trim() || !prenom.trim()) {
-      setErreur('Renseignez le nom et le prénom pour lancer la recherche.')
-      return
+    setErreur('')
+    const normaliser = (val) => val.replace(/\s+/g, ' ').trim()
+
+    if (etapeRecherche === 'cni') {
+      if (!numeroCarte.trim()) {
+        setErreur('Saisissez le numéro de votre carte d\'identité.')
+        return
+      }
+      setChargement(true)
+      try {
+        const { data } = await rechercherAnnonces('', '', undefined, normaliser(numeroCarte), telephone)
+        if (data && data.length > 0) {
+          navigue('/recherche/resultats', {
+            state: { resultats: data, nom: '', prenom: '', telephone },
+          })
+        } else {
+          setEtapeRecherche('nom')
+          setNumeroCarte(normaliser(numeroCarte))
+        }
+      } catch (err) {
+        setErreur(extraireMessageErreur(err, 'La recherche a échoué.'))
+      } finally {
+        setChargement(false)
+      }
+    } else if (etapeRecherche === 'nom') {
+      const nomNettoye = normaliser(nom)
+      if (!nomNettoye) {
+        setErreur('Saisissez votre nom tel qu\'il figure sur votre CNI.')
+        return
+      }
+      setChargement(true)
+      try {
+        const { data } = await rechercherAnnonces(nomNettoye, '', undefined, undefined, telephone)
+        if (data && data.length > 0) {
+          navigue('/recherche/resultats', {
+            state: { resultats: data, nom: nomNettoye, prenom: '', telephone },
+          })
+        } else {
+          setEtapeRecherche('prenom')
+        }
+      } catch (err) {
+        setErreur(extraireMessageErreur(err, 'La recherche a échoué.'))
+      } finally {
+        setChargement(false)
+      }
+    } else if (etapeRecherche === 'prenom') {
+      const prenomNettoye = normaliser(prenom)
+      if (!prenomNettoye) {
+        setErreur('Saisissez votre prénom tel qu\'il figure sur votre CNI.')
+        return
+      }
+      setChargement(true)
+      try {
+        const { data } = await rechercherAnnonces('', prenomNettoye, undefined, undefined, telephone)
+        if (data && data.length > 0) {
+          navigue('/recherche/resultats', {
+            state: { resultats: data, nom: '', prenom: prenomNettoye, telephone },
+          })
+        } else {
+          setEtapeRecherche('nomPrenom')
+        }
+      } catch (err) {
+        setErreur(extraireMessageErreur(err, 'La recherche a échoué.'))
+      } finally {
+        setChargement(false)
+      }
+    } else if (etapeRecherche === 'nomPrenom') {
+      const nomNettoye = normaliser(nom)
+      const prenomNettoye = normaliser(prenom)
+      if (!nomNettoye || !prenomNettoye) {
+        setErreur('Saisissez le nom et le prénom tels qu\'ils figurent sur votre CNI.')
+        return
+      }
+      executerRecherche(nomNettoye, prenomNettoye)
     }
-    executerRecherche(nom, prenom)
   }
 
   const etapeIndex = etape === 'inscription' ? 0 : 1
@@ -296,13 +384,12 @@ function Recherche() {
             <p
               className="animate-fade-up delay-100 text-base md:text-lg text-slate-500 max-w-2xl mx-auto leading-relaxed"
             >
-              Recherchez parmi les annonces vérifiées par notre équipe : saisissez votre nom et
-              votre prénom, puis comparez la photo de la carte pour organiser sa récupération.
+              Recherchez parmi les annonces vérifiées par notre équipe : entrez les informations telles qu'elles figurent sur votre CNI.
             </p>
           </div>
         </section>
 
-        <AnimatePresence>
+        <AnimatePresence mode="wait">
           {erreur && (
             <motion.div
               key="erreur"
@@ -358,7 +445,7 @@ function Recherche() {
                     </p>
                   </motion.div>
 
-                   <AnimatePresence>
+                   <AnimatePresence mode="wait">
                      {mode === 'inscription' ? (
                        <motion.form
                          key="form-inscription"
@@ -467,7 +554,7 @@ function Recherche() {
                   </AnimatePresence>
 
                   <div className="mt-6 text-center">
-                    <AnimatePresence>
+                    <AnimatePresence mode="wait">
                       {mode === 'inscription' ? (
                         <motion.button
                           key="lien-connexion"
@@ -502,7 +589,7 @@ function Recherche() {
             </section>
         ) : (
             <section className="px-5 sm:px-6">
-              <div className="max-w-4xl mx-auto">
+              <div className="max-w-xl mx-auto">
                 <div className="relative bg-white/90 backdrop-blur-xl p-7 md:p-9 rounded-[2rem] shadow-[0_20px_60px_rgba(2,132,199,0.08),0_2px_8px_rgba(15,23,42,0.04)] border border-white/80 overflow-hidden">
                   <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-brand-600 via-brand-400 to-emerald-400" />
                   <div className="absolute -top-20 -left-20 w-40 h-40 bg-brand-400/10 blur-3xl rounded-full pointer-events-none" />
@@ -517,22 +604,47 @@ function Recherche() {
                       <Search size={26} className="text-brand-600" />
                     </div>
                     <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
-                      Lancez votre recherche
+                      {etapeRecherche === 'cni' && 'Recherche par numéro de CNI'}
+                      {etapeRecherche === 'nom' && 'Recherche par nom'}
+                      {etapeRecherche === 'prenom' && 'Recherche par prénom'}
+                      {etapeRecherche === 'nomPrenom' && 'Recherche par nom et prénom'}
                     </h2>
                     <p className="text-sm text-slate-500 mt-1.5 leading-relaxed">
-                      Saisissez le nom et le prénom tels qu'ils figurent sur votre CNI
+                      {etapeRecherche === 'cni' && 'Entrez le numéro de votre carte d\'identité tel qu\'il figure sur la carte'}
+                      {etapeRecherche === 'nom' && 'Aucun résultat avec le numéro. Entrez maintenant votre nom tel qu\'il figure sur votre CNI'}
+                      {etapeRecherche === 'prenom' && 'Aucun résultat avec le nom. Entrez maintenant votre prénom tel qu\'il figure sur votre CNI'}
+                      {etapeRecherche === 'nomPrenom' && 'Aucun résultat avec le prénom. Entrez maintenant le nom et le prénom'}
                     </p>
                   </motion.div>
 
                   <form onSubmit={lancerRecherche}>
-                    <motion.div
-                      variants={stagger}
-                      initial="initial"
-                      animate="animate"
-                      className="grid md:grid-cols-3 gap-4 items-end"
-                    >
-                      <ChampFormulaire label="Prénom" icon={User}>
-                        <div className="relative">
+                    <div className="space-y-4">
+                      {etapeRecherche === 'cni' && (
+                        <ChampFormulaire label="Numéro de CNI" icon={Search}>
+                          <input
+                            type="text"
+                            value={numeroCarte}
+                            onChange={(e) => setNumeroCarte(e.target.value)}
+                            placeholder="ex : 1120000001234"
+                            className="w-full pl-4 pr-4 py-3.5 bg-slate-50/80 border border-slate-200 rounded-xl focus:outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-100/60 focus:bg-white transition-all duration-300 hover:border-slate-300"
+                          />
+                        </ChampFormulaire>
+                      )}
+
+                      {etapeRecherche === 'nom' && (
+                        <ChampFormulaire label="Nom" icon={User}>
+                          <input
+                            type="text"
+                            value={nom}
+                            onChange={(e) => setNom(e.target.value)}
+                            placeholder="ex : Bernard"
+                            className="w-full pl-4 pr-4 py-3.5 bg-slate-50/80 border border-slate-200 rounded-xl focus:outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-100/60 focus:bg-white transition-all duration-300 hover:border-slate-300"
+                          />
+                        </ChampFormulaire>
+                      )}
+
+                      {etapeRecherche === 'prenom' && (
+                        <ChampFormulaire label="Prénom" icon={User}>
                           <input
                             type="text"
                             value={prenom}
@@ -540,41 +652,66 @@ function Recherche() {
                             placeholder="ex : Naomi"
                             className="w-full pl-4 pr-4 py-3.5 bg-slate-50/80 border border-slate-200 rounded-xl focus:outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-100/60 focus:bg-white transition-all duration-300 hover:border-slate-300"
                           />
-                        </div>
-                      </ChampFormulaire>
+                        </ChampFormulaire>
+                      )}
 
-                      <ChampFormulaire label="Nom" icon={User}>
-                        <input
-                          type="text"
-                          value={nom}
-                          onChange={(e) => setNom(e.target.value)}
-                          placeholder="ex : Bernard"
-                          className="w-full pl-4 pr-4 py-3.5 bg-slate-50/80 border border-slate-200 rounded-xl focus:outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-100/60 focus:bg-white transition-all duration-300 hover:border-slate-300"
-                        />
-                      </ChampFormulaire>
+                      {etapeRecherche === 'nomPrenom' && (
+                        <>
+                          <ChampFormulaire label="Nom" icon={User}>
+                            <input
+                              type="text"
+                              value={nom}
+                              onChange={(e) => setNom(e.target.value)}
+                              placeholder="ex : Bernard"
+                              className="w-full pl-4 pr-4 py-3.5 bg-slate-50/80 border border-slate-200 rounded-xl focus:outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-100/60 focus:bg-white transition-all duration-300 hover:border-slate-300"
+                            />
+                          </ChampFormulaire>
+                          <ChampFormulaire label="Prénom" icon={User}>
+                            <input
+                              type="text"
+                              value={prenom}
+                              onChange={(e) => setPrenom(e.target.value)}
+                              placeholder="ex : Naomi"
+                              className="w-full pl-4 pr-4 py-3.5 bg-slate-50/80 border border-slate-200 rounded-xl focus:outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-100/60 focus:bg-white transition-all duration-300 hover:border-slate-300"
+                            />
+                          </ChampFormulaire>
+                        </>
+                      )}
 
-                      <motion.div variants={fadeChild}>
+                      <motion.button
+                        type="submit"
+                        disabled={chargement}
+                        whileHover={{ scale: chargement ? 1 : 1.02 }}
+                        whileTap={{ scale: chargement ? 1 : 0.98 }}
+                        className="btn-primary w-full !py-4 disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        {chargement ? (
+                          <>
+                            <Loader2 size={18} className="animate-spin" />
+                            Recherche...
+                          </>
+                        ) : (
+                          <>
+                            <Search size={18} />
+                            Lancer la recherche
+                          </>
+                        )}
+                      </motion.button>
+
+                      {etapeRecherche === 'cni' && (
                         <motion.button
-                          type="submit"
+                          type="button"
+                          onClick={() => setEtapeRecherche('nom')}
                           disabled={chargement}
-                          whileHover={{ scale: chargement ? 1 : 1.03 }}
-                          whileTap={{ scale: chargement ? 1 : 0.97 }}
-                          className="btn-primary w-full h-[52px] !py-0 disabled:opacity-50 flex items-center justify-center gap-2"
+                          whileHover={{ scale: chargement ? 1 : 1.02 }}
+                          whileTap={{ scale: chargement ? 1 : 0.98 }}
+                          className="w-full !py-3.5 rounded-xl border-2 border-dashed border-slate-200 bg-white/60 text-slate-500 text-sm font-semibold hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50/50 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50"
                         >
-                          {chargement ? (
-                            <>
-                              <Loader2 size={18} className="animate-spin" />
-                              Recherche...
-                            </>
-                          ) : (
-                            <>
-                              <Search size={18} />
-                              Lancer la recherche
-                            </>
-                          )}
+                          <SkipForward size={15} />
+                          Je ne me souviens pas, passer au nom
                         </motion.button>
-                      </motion.div>
-                    </motion.div>
+                      )}
+                    </div>
                   </form>
                 </div>
               </div>

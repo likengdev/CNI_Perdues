@@ -28,52 +28,155 @@ def normaliser_date_naissance(valeur):
     )
 
 
+TAILLE_MAX_IMAGE = 10 * 1024 * 1024  # 10 Mo
+EXTENSIONS_AUTORISEES = {'jpg', 'jpeg', 'png', 'webp'}
+DIMENSION_MAX = 4096  # largeur ou hauteur maximale (anti bombe de décompression)
+
+
 class ExtractionCNISerializer(serializers.Serializer):
     """
-    Reçoit uniquement les deux photos (pas encore une Annonce complète) :
-    sert à l'étape d'extraction/prévisualisation avant publication
-    définitive (section 6.1, étapes 4-6).
+    Reçoit les photos pour extraction/prévisualisation avant publication
+    définitive.
     """
 
     photo_recto = serializers.ImageField()
-    photo_verso = serializers.ImageField()
+    photo_verso = serializers.ImageField(required=False, allow_null=True)
+    type_document = serializers.ChoiceField(
+        choices=[('cni', 'CNI'), ('passeport', 'Passeport')],
+        required=False,
+        default='cni',
+    )
+
+    def _valider_photo(self, valeur):
+        if valeur is None:
+            return valeur
+
+        if valeur.size > TAILLE_MAX_IMAGE:
+            raise serializers.ValidationError(
+                "Image trop volumineuse (10 Mo max)."
+            )
+
+        nom = (getattr(valeur, 'name', '') or '').lower()
+        extension = nom.rsplit('.', 1)[-1] if '.' in nom else ''
+        if extension and extension not in EXTENSIONS_AUTORISEES:
+            raise serializers.ValidationError(
+                "Format d'image non autorisé (JPG, PNG ou WEBP uniquement)."
+            )
+
+        try:
+            from PIL import Image
+            image = Image.open(valeur)
+            largeur, hauteur = image.size
+            image.verify()
+        except Exception:
+            raise serializers.ValidationError(
+                "Image invalide ou corrompue."
+            )
+        finally:
+            valeur.seek(0)
+
+        if largeur > DIMENSION_MAX or hauteur > DIMENSION_MAX:
+            raise serializers.ValidationError(
+                f"Image trop grande ({DIMENSION_MAX}px max par dimension)."
+            )
+        return valeur
+
+    def validate_photo_recto(self, valeur):
+        return self._valider_photo(valeur)
+
+    def validate_photo_verso(self, valeur):
+        return self._valider_photo(valeur)
 
 
 class ExtractionCNIResultSerializer(serializers.Serializer):
-    """
-    Résultat de l'extraction, envoyé au déclarant pour vérification/
-    correction avant publication définitive (section 6.1, étape 6).
-    Champs non obligatoires : un champ vide signifie que l'extraction
-    automatique a échoué sur ce champ précis, à corriger manuellement.
-    """
-
     nom_titulaire = serializers.CharField(allow_blank=True)
     prenom_titulaire = serializers.CharField(allow_blank=True)
     date_naissance = serializers.CharField(allow_blank=True)
     lieu_naissance = serializers.CharField(allow_blank=True)
     numero_carte = serializers.CharField(allow_blank=True)
     photo_titulaire_base64 = serializers.CharField(allow_blank=True)
+    confiances = serializers.DictField(child=serializers.FloatField(), default=dict)
+    qualite_images = serializers.DictField(child=serializers.DictField(), default=dict)
+    type_document = serializers.CharField(allow_blank=True, required=False)
+    mrz = serializers.DictField(required=False, allow_null=True)
 
 
 class PublicationAnnonceSerializer(serializers.ModelSerializer):
     """
-    Étape finale du parcours déclarant (section 6.1, étapes 7-8) :
-    enregistre l'annonce en base une fois que le déclarant a vérifié/
-    corrigé les champs extraits et choisi la position de la CNI.
+    Étape finale du parcours déclarant.
     """
 
     telephone_declarant = serializers.CharField(write_only=True)
     photo_titulaire_base64 = serializers.CharField(write_only=True, allow_blank=False)
     date_naissance = serializers.CharField()
+    type_document = serializers.ChoiceField(
+        choices=[('cni', 'CNI'), ('passeport', 'Passeport')],
+        required=False,
+        default='cni',
+    )
 
     class Meta:
         model = Annonce
         fields = [
-            'telephone_declarant', 'photo_recto', 'photo_verso',
+            'telephone_declarant', 'type_document', 'photo_recto', 'photo_verso',
             'nom_titulaire', 'prenom_titulaire', 'date_naissance',
             'lieu_naissance', 'numero_carte', 'photo_titulaire_base64',
             'position_cni', 'position_precision',
         ]
+
+    def _valider_photo(self, valeur, nom_champ):
+        if valeur is None:
+            return valeur
+
+        if valeur.size > TAILLE_MAX_IMAGE:
+            raise serializers.ValidationError(
+                f"{nom_champ} : image trop volumineuse (10 Mo max)."
+            )
+
+        nom = (getattr(valeur, 'name', '') or '').lower()
+        extension = nom.rsplit('.', 1)[-1] if '.' in nom else ''
+        if extension and extension not in EXTENSIONS_AUTORISEES:
+            raise serializers.ValidationError(
+                f"{nom_champ} : format non autorisé (JPG, PNG ou WEBP)."
+            )
+
+        try:
+            from PIL import Image
+            image = Image.open(valeur)
+            largeur, hauteur = image.size
+            image.verify()
+        except Exception:
+            raise serializers.ValidationError(
+                f"{nom_champ} : image invalide ou corrompue."
+            )
+        finally:
+            valeur.seek(0)
+
+        if largeur > DIMENSION_MAX or hauteur > DIMENSION_MAX:
+            raise serializers.ValidationError(
+                f"{nom_champ} : image trop grande ({DIMENSION_MAX}px max)."
+            )
+        return valeur
+
+    def validate_photo_recto(self, valeur):
+        return self._valider_photo(valeur, "photo_recto")
+
+    def validate_photo_verso(self, valeur):
+        return self._valider_photo(valeur, "photo_verso")
+
+    def validate(self, donnees):
+        type_document = donnees.get('type_document') or 'cni'
+        if type_document == 'cni' and not donnees.get('photo_verso'):
+            raise serializers.ValidationError({
+                "photo_verso": "Le verso est obligatoire pour une CNI."
+            })
+        if type_document == 'passeport' and donnees.get('photo_verso'):
+            donnees.pop('photo_verso')
+        if donnees.get('position_cni') == Annonce.PositionCNI.AUTRE and not donnees.get('position_precision'):
+            raise serializers.ValidationError({
+                "position_precision": "Obligatoire lorsque 'Autre lieu' est sélectionné."
+            })
+        return donnees
 
     def validate_telephone_declarant(self, value):
         utilisateur = Utilisateur.objects.filter(telephone=value).first()
@@ -144,12 +247,12 @@ class PublicationAnnonceSerializer(serializers.ModelSerializer):
 
 
 class AnnonceDetailSerializer(serializers.ModelSerializer):
-    """Représentation en lecture d'une Annonce, utilisée pour confirmer une action (publication, validation, rejet)."""
+    """Représentation en lecture d'une Annonce."""
 
     class Meta:
         model = Annonce
         fields = [
-            'id', 'nom_titulaire', 'prenom_titulaire', 'date_naissance',
+            'id', 'type_document', 'nom_titulaire', 'prenom_titulaire', 'date_naissance',
             'lieu_naissance', 'numero_carte', 'position_cni',
             'position_precision', 'statut', 'motif_rejet', 'date_creation',
         ]
@@ -157,17 +260,12 @@ class AnnonceDetailSerializer(serializers.ModelSerializer):
 
 
 class RechercheAnnonceSerializer(serializers.ModelSerializer):
-    """
-    Représentation publique d'une annonce dans les résultats de
-    recherche (section 7.C) : uniquement les champs utiles au
-    bénéficiaire, jamais les photos brutes recto/verso (contrainte
-    10.3 -- ces photos ne sont jamais montrées publiquement).
-    """
+    """Représentation publique d'une annonce dans les résultats de recherche."""
 
     class Meta:
         model = Annonce
         fields = [
-            'id', 'nom_titulaire', 'prenom_titulaire',
+            'id', 'type_document', 'nom_titulaire', 'prenom_titulaire',
             'photo_titulaire', 'date_creation',
         ]
         read_only_fields = fields

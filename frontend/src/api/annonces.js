@@ -1,10 +1,19 @@
 import clientApi from './client'
 
-export function extraireInformationsCni(photoRecto, photoVerso) {
+export function extraireInformationsCni(photoRecto, photoVerso, typeDocument = 'cni') {
   const donnees = new FormData()
   donnees.append('photo_recto', photoRecto)
-  donnees.append('photo_verso', photoVerso)
+  if (photoVerso) {
+    donnees.append('photo_verso', photoVerso)
+  }
+  if (typeDocument) {
+    donnees.append('type_document', typeDocument)
+  }
   return clientApi.post('/annonces/extraire/', donnees)
+}
+
+export function extraireInformationsPasseport(photoRecto, photoVerso, typeDocument = 'passeport') {
+  return extraireInformationsCni(photoRecto, photoVerso, typeDocument)
 }
 
 export function publierAnnonce(champs) {
@@ -23,14 +32,15 @@ export function rejeterAnnonce(id, motifRejet){
 
 }
 
-export function rechercherAnnonces(nom, prenom, dateNaissance, numeroCarte, telephone) {
-  return clientApi.get('/annonces/rechercher/', {
-    params: {
-      nom: nom || undefined,
-      prenom: prenom || undefined,
-      date_naissance: dateNaissance || undefined,
-      numero_carte: numeroCarte || undefined,
-      telephone: telephone || undefined,
-    },
-  })
+export function rechercherAnnonces(nom, prenom, dateNaissance, numeroCarte, telephone, typeDocument, numero) {
+  const params = {
+    nom: nom || undefined,
+    prenom: prenom || undefined,
+    date_naissance: dateNaissance || undefined,
+    numero_carte: numeroCarte || numero || undefined,
+    numero: numero || numeroCarte || undefined,
+    telephone: telephone || undefined,
+    type_document: typeDocument || undefined,
+  }
+  return clientApi.get('/annonces/rechercher/', { params })
 }

@@ -80,7 +80,7 @@ function ResultatsRecherche() {
   const [chargement, setChargement] = useState(false)
   const [erreur, setErreur] = useState('')
 
-  if (!state?.resultats || !nom || !prenom) {
+  if (!state?.resultats) {
     return <Navigate to="/recherche" replace />
   }
 
@@ -90,8 +90,14 @@ function ResultatsRecherche() {
     e.preventDefault()
     setErreur('')
     setChargement(true)
+    const normaliser = (val) => val.replace(/\s+/g, ' ').trim()
     try {
-      const { data } = await rechercherAnnonces(nom, prenom, dateNaissance || undefined, numeroCarte || undefined)
+      const { data } = await rechercherAnnonces(
+        normaliser(nom),
+        normaliser(prenom),
+        dateNaissance || undefined,
+        numeroCarte ? normaliser(numeroCarte) : undefined,
+      )
       setResultats(data)
     } catch (err) {
       setErreur(extraireMessageErreur(err, "Impossible d'affiner la recherche."))
@@ -214,7 +220,7 @@ function ResultatsRecherche() {
           </p>
         </motion.div>
 
-        <AnimatePresence>
+        <AnimatePresence mode="wait">
           {erreur && (
             <motion.div
               initial={{ opacity: 0, y: -8 }}
@@ -231,7 +237,7 @@ function ResultatsRecherche() {
           )}
         </AnimatePresence>
 
-        <AnimatePresence>
+        <AnimatePresence mode="wait">
           {afficherAffinage && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
