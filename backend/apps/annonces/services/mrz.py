@@ -153,10 +153,19 @@ class ServiceMRZ:
         code_pays = normaliser_alphabetique(ligne1[2:5])
         zone_noms = normaliser_alphabetique(ligne1[5:44])
 
-        if '<<' in zone_noms:
-            nom_brut, prenoms_brut = zone_noms.split('<<', 1)
+        # Le séparateur principal nom/prénoms en TD3 est entre lettres ('<<').
+        # L'OCR le lit parfois comme 'K<', '<K', 'KK', 'C<', etc.
+        parts = re.split(r'(?<=[A-Z])[<KC]{2}(?=[A-Z])', zone_noms, maxsplit=1)
+        if len(parts) == 2:
+            nom_brut = parts[0]
+            reste = parts[1]
+        elif '<<' in zone_noms:
+            nom_brut, reste = zone_noms.split('<<', 1)
         else:
-            nom_brut, prenoms_brut = zone_noms, ''
+            nom_brut, reste = zone_noms, ''
+
+        # Les prénoms s'arrêtent avant la séquence de chevrons de remplissage
+        prenoms_brut = re.split(r'<<|[<]{2,}', reste, maxsplit=1)[0] if reste else ''
 
         champ_numero = ligne2[0:9].upper()
         chiffre_numero = normaliser_numerique(ligne2[9:10])

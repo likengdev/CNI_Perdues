@@ -1,3 +1,4 @@
+import logging
 import cv2
 import numpy as np
 
@@ -6,6 +7,8 @@ from .doctr_engine import ServiceOCRDocTR
 from .photo_extractor import ServicePhotoExtractor
 from .validator import ServiceValidation
 from .passeport_parser import ServiceParserPasseport
+
+logger = logging.getLogger(__name__)
 
 
 class ServiceQualiteImage:
@@ -199,7 +202,8 @@ class PipelineExtractionCNI:
                 },
                 "type_document": "cni",
             }
-        except Exception:
+        except Exception as exc:
+            logger.exception("Erreur lors de l'exécution du pipeline d'extraction: %s", exc)
             return {
                 "nom_titulaire": "",
                 "prenom_titulaire": "",

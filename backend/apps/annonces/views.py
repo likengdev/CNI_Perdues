@@ -163,10 +163,11 @@ class ValiderAnnonceView(APIView):
         annonce.save(update_fields=['statut', 'date_modification'])
 
         libelle_doc = 'passeport' if annonce.type_document == 'passeport' else 'CNI'
+        declarant = annonce.declarant
         Historique.enregistrer(
             utilisateur=declarant,
-            type_action=Historique.TypeAction.PUBLICATION,
-            description=f"{libelle_doc} #{annonce.id} publiée par {declarant}",
+            type_action=Historique.TypeAction.VALIDATION,
+            description=f"{libelle_doc} #{annonce.id} validé(e) par l'administrateur",
         )
 
         return Response(
