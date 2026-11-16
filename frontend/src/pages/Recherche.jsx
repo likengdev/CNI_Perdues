@@ -211,7 +211,7 @@ function Recherche() {
 
     if (etapeRecherche === 'cni') {
       if (!numeroCarte.trim()) {
-        setErreur('Saisissez le numéro de votre carte d\'identité.')
+        setErreur('Saisissez le numéro de votre carte d\'identité ou de votre passeport.')
         return
       }
       setChargement(true)
@@ -254,7 +254,7 @@ function Recherche() {
     } else if (etapeRecherche === 'prenom') {
       const prenomNettoye = normaliser(prenom)
       if (!prenomNettoye) {
-        setErreur('Saisissez votre prénom tel qu\'il figure sur votre CNI.')
+        setErreur('Saisissez votre prénom tel qu\'il figure sur votre CNI ou sur votre passeport.')
         return
       }
       setChargement(true)
@@ -276,7 +276,7 @@ function Recherche() {
       const nomNettoye = normaliser(nom)
       const prenomNettoye = normaliser(prenom)
       if (!nomNettoye || !prenomNettoye) {
-        setErreur('Saisissez le nom et le prénom tels qu\'ils figurent sur votre CNI.')
+        setErreur('Saisissez le nom et le prénom tels qu\'ils figurent sur votre CNI ou sur votre passeport.')
         return
       }
       executerRecherche(nomNettoye, prenomNettoye)
@@ -378,13 +378,13 @@ function Recherche() {
               className="animate-fade-up text-3xl md:text-5xl font-extrabold text-slate-900 leading-[1.15] tracking-tight mb-5"
             >
               Retrouvez votre{' '}
-              <span className="text-gradient">carte d'identité</span> perdue
+              <span className="text-gradient">carte d'identité ou passeport</span> perdu
             </h1>
 
             <p
               className="animate-fade-up delay-100 text-base md:text-lg text-slate-500 max-w-2xl mx-auto leading-relaxed"
             >
-              Recherchez parmi les annonces vérifiées par notre équipe : entrez les informations telles qu'elles figurent sur votre CNI.
+              Recherchez parmi les annonces vérifiées par notre équipe : entrez les informations telles qu'elles figurent sur votre CNI ou sur votre passeport.
             </p>
           </div>
         </section>

@@ -57,7 +57,7 @@ const ChoixEspace = () => {
               
               <h2 className="text-3xl font-bold text-slate-900 mb-4 group-hover:text-brand-700 transition-colors duration-300">Rechercher</h2>
               <p className="text-slate-500 flex-grow text-lg leading-relaxed mb-12 font-medium">
-                Retrouvez votre CNI perdue parmi des centaines d'annonces vérifiées par notre équipe.
+                Retrouvez votre CNI perdue ou votre passeport parmi des centaines d'annonces vérifiées par notre équipe.
               </p>
               
               <div className="flex items-center text-brand-600 font-bold text-lg group-hover:translate-x-2 transition-transform duration-300 mt-auto">
@@ -89,7 +89,7 @@ const ChoixEspace = () => {
               
               <h2 className="text-3xl font-bold text-slate-900 mb-4 group-hover:text-emerald-700 transition-colors duration-300">Publier</h2>
               <p className="text-slate-500 flex-grow text-lg leading-relaxed mb-12 font-medium">
-                Vous avez trouvé une CNI ? Signalez-la rapidement pour aider son propriétaire à la récupérer.
+                Vous avez trouvé une CNI ou un passeport? Signalez rapidement pour aider son propriétaire à la récupérer.
               </p>
               
               <div className="flex items-center text-emerald-600 font-bold text-lg group-hover:translate-x-2 transition-transform duration-300 mt-auto">
